@@ -129,17 +129,29 @@ class CheckoutController extends Controller
         session()->forget('checkout_selected_ids');
     }
 
-    private function createOrderAndStoreIdInSession($cartDetails, $totalFinal, $alamatData, $userId)
-    {
-        DB::beginTransaction();
-        try {
-            $jastiperId = $cartDetails[0]->produk->jastiper_id ?? null;
-            $alamatFull = $alamatData['alamat_lengkap'] . ', ' . $alamatData['kota'] . ', ' . $alamatData['provinsi'] . ' (' . $alamatData['kode_pos'] . ')';
+private function createOrderAndStoreIdInSession($cartDetails, $totalFinal, $alamatData, $userId)
+{
+    DB::beginTransaction();
+    try {
+        $alamatFull = $alamatData['alamat_lengkap'] . ', ' .
+            $alamatData['kota'] . ', ' .
+            $alamatData['provinsi'] . ' (' .
+            $alamatData['kode_pos'] . ')';
+
+        // 🔥 FIX DI SINI: BARANG DIKELOMPOKKAN PER JASTIPER
+        $groupedByJastiper = collect($cartDetails)
+            ->groupBy(fn ($item) => $item->produk->jastiper_id);
+
+        $pesananIds = [];
+
+        foreach ($groupedByJastiper as $jastiperId => $items) {
+
+            $total = $items->sum(fn ($i) => $i->total_harga);
 
             $pesanan = Pesanan::create([
                 'user_id' => $userId,
                 'jastiper_id' => $jastiperId,
-                'total_harga' => $totalFinal,
+                'total_harga' => $total,
                 'alamat_pengiriman' => $alamatFull,
                 'catatan' => $alamatData['catatan'] ?? null,
                 'status_pesanan' => 'MENUNGGU_PEMBAYARAN',
@@ -147,7 +159,7 @@ class CheckoutController extends Controller
                 'no_hp' => Auth::user()->no_hp ?? null,
             ]);
 
-            foreach ($cartDetails as $item) {
+            foreach ($items as $item) {
                 DetailPesanan::create([
                     'pesanan_id' => $pesanan->id,
                     'barang_id' => $item->produk->id,
@@ -156,14 +168,22 @@ class CheckoutController extends Controller
                 ]);
             }
 
-            DB::commit();
-            session(['current_pesanan_id' => $pesanan->id]);
-            return $pesanan->id;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
+            $pesananIds[] = $pesanan->id;
         }
+
+        DB::commit();
+
+        // sementara belum dipakai (aman)
+        session(['current_pesanan_ids' => $pesananIds]);
+
+        return $pesananIds;
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        throw $e;
     }
+}
+
 
     public function index()
     {
@@ -179,18 +199,16 @@ class CheckoutController extends Controller
         }
 
         $cartData = $this->getCartData($userId);
-        $pesananId = session('current_pesanan_id');
+        $pesananIds = session('current_pesanan_ids', []);
+
         
         $step = session('checkout_step', 1);
 
-        if (!$pesananId && $step > 2 && $cartData) {
-            $step = 1;
-            session(['checkout_step' => 1]);
-        } 
-        elseif (!$pesananId && !$cartData) {
-            return redirect()->route('keranjang.index')
-                ->with('error', 'Keranjang belanja Anda kosong (atau item yang dipilih tidak valid).');
-        }
+        if (empty($pesananIds) && $step > 2 && $cartData) {
+    $step = 1;
+    session(['checkout_step' => 1]);
+}
+ 
 
         $cartDetails = $cartData?->cartDetails ?? [];
         $subtotal     = $cartData?->subtotal ?? 0;
@@ -199,21 +217,14 @@ class CheckoutController extends Controller
 
         $rekeningAdmin = $this->getAdminBankAccounts();
 
-        if ($pesananId) {
-            $pesanan = Pesanan::find($pesananId);
-            if ($pesanan) {
-                $total_final = $pesanan->total_harga;
-            } else {
-                session()->forget(['current_pesanan_id', 'checkout_step']);
-                return redirect()->route('keranjang.index')->with('error', 'Pesanan tidak ditemukan.');
-            }
-        }
-
+       if (!empty($pesananIds)) {
+    $total_final = Pesanan::whereIn('id', $pesananIds)->sum('total_harga');
+}
         $cartCount = count(session('cart', []));
 
         return view('user.checkout.index', compact(
             'cartDetails', 'subtotal', 'totalBerat', 'total_final',
-            'step', 'pesananId', 'rekeningAdmin', 'cartCount'
+            'step', 'rekeningAdmin', 'cartCount'
         ));
     }
 
@@ -262,56 +273,75 @@ class CheckoutController extends Controller
         // PROSES DARI STEP 3 KE 4 (Upload Bukti)
         else if ($currentStep == 3) { 
             
-            $request->validate([
-                'bukti_transfer' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-                'pesanan_id' => 'required|exists:pesanans,id', 
-            ]);
-            
-            $pesananId = $request->input('pesanan_id');
-            $pesanan = Pesanan::find($pesananId);
-            
-            if (!$pesanan || $pesanan->status_pesanan !== 'MENUNGGU_PEMBAYARAN') {
-                return back()->with('error', 'Status pesanan tidak sesuai.');
-            }
+    $request->validate([
+        'bukti_transfer' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+    ]);
 
-            $path = $request->file('bukti_transfer')->store('bukti_transfer/user', 'public');
-            
-            try {
-                DB::beginTransaction();
+    $path = $request->file('bukti_transfer')
+        ->store('bukti_transfer/user', 'public');
 
-                AlurDana::create([
-                    'pesanan_id' => $pesananId,
-                    'jenis_transaksi' => 'PEMBAYARAN_USER',
-                    'jumlah_dana' => $pesanan->total_harga,
-                    'bukti_tf_path' => $path,
-                    'status_konfirmasi' => 'MENUNGGU_CEK',
-                    'tanggal_transfer' => now(), 
-                ]);
+    try {
+        DB::beginTransaction();
 
-                $pesanan->update([
-                    'status_pesanan' => 'MENUNGGU_KONFIRMASI_ADMIN',
-                ]);
-                
-                // HAPUS ITEM DARI SESSION (Hanya yang dipilih)
-                $this->clearUserCartFromSession($userId);
-                
-                session(['checkout_step' => $nextStep]); 
-                
-                DB::commit();
-                
-                $admin = User::find($this->adminUserId);
-                if ($admin) {
-                    $admin->notify(new PembayaranUserBaru($pesanan));
-                }
-                
-                return redirect()->route('checkout.index')->with('success', 'Pembayaran berhasil diunggah.');
+        // 🔥 AMBIL SEMUA PESANAN YANG BARU DIBUAT
+        $pesananIds = session('current_pesanan_ids');
 
-            } catch (\Exception $e) {
-                DB::rollBack();
-                Storage::disk('public')->delete($path);
-                return back()->with('error', 'Gagal memproses pembayaran: ' . $e->getMessage());
-            }
+        if (!$pesananIds || !is_array($pesananIds)) {
+            throw new \Exception('Pesanan tidak ditemukan.');
         }
+
+        foreach ($pesananIds as $pesananId) {
+
+            $pesanan = Pesanan::find($pesananId);
+
+            if (!$pesanan || $pesanan->status_pesanan !== 'MENUNGGU_PEMBAYARAN') {
+                continue;
+            }
+
+            // 🔥 CATAT PEMBAYARAN UNTUK SETIAP PESANAN
+            AlurDana::create([
+                'pesanan_id' => $pesananId,
+                'jenis_transaksi' => 'PEMBAYARAN_USER',
+                'jumlah_dana' => $pesanan->total_harga,
+                'bukti_tf_path' => $path,
+                'status_konfirmasi' => 'MENUNGGU_CEK',
+                'tanggal_transfer' => now(), 
+            ]);
+
+            // 🔥 UPDATE STATUS MASING-MASING PESANAN
+            $pesanan->update([
+                'status_pesanan' => 'MENUNGGU_KONFIRMASI_ADMIN',
+            ]);
+        }
+
+        // KODE LAMA - TETAP
+        $this->clearUserCartFromSession($userId);
+        session(['checkout_step' => $nextStep]);
+
+        DB::commit();
+
+$admin = User::find($this->adminUserId);
+
+if ($admin) {
+    foreach ($pesananIds as $pesananId) {
+        $pesanan = Pesanan::find($pesananId);
+        if ($pesanan) {
+            $admin->notify(new PembayaranUserBaru($pesanan));
+        }
+    }
+}
+
+
+        return redirect()->route('checkout.index')
+            ->with('success', 'Pembayaran berhasil diunggah.');
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Storage::disk('public')->delete($path);
+        return back()->with('error', 'Gagal memproses pembayaran: ' . $e->getMessage());
+    }
+}
+
         
         return redirect()->route('checkout.index');
     }

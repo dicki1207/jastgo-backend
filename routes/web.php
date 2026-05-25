@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 */
 use App\Http\Controllers\AuthController;
 
+use App\Http\Controllers\SecureResetPasswordController;
 /*
 |--------------------------------------------------------------------------
 | Controllers - Admin
@@ -36,6 +37,8 @@ use App\Http\Controllers\User\CheckoutController;
 use App\Http\Controllers\User\JastiperRegistrationController;
 use App\Http\Controllers\User\PesananController as UserPesananController;
 use App\Http\Controllers\User\UlasanController;
+use App\Http\Controllers\User\TokoController;
+use App\Http\Controllers\User\JastiperFollowController;
 
 /*
 |--------------------------------------------------------------------------
@@ -53,6 +56,7 @@ use App\Http\Controllers\Jastiper\LaporanKeuntunganJastiperController;
 use App\Http\Controllers\Jastiper\ProfileController as JastiperProfileController;
 use App\Http\Controllers\Jastiper\DashboardJastiperController;
 
+
 /*
 |--------------------------------------------------------------------------
 | ROOT ROUTES
@@ -68,6 +72,15 @@ Route::get('/produk/{id}', [AuthController::class, 'showProductDetail'])->name('
 | AUTH ROUTES
 |--------------------------------------------------------------------------
 */
+Route::get('/lupa-password', function () {return view('lupa-password');})
+    ->name('password.secure');
+
+Route::post('/lupa-password', [SecureResetPasswordController::class, 'reset'])
+    ->name('password.secure.post');
+
+Route::post('/lupa-password', [SecureResetPasswordController::class, 'reset'])
+    ->middleware('throttle:5,1')
+    ->name('password.secure.post');
 
 
 Route::get('/login',    [AuthController::class, 'loginForm'])->name('login');
@@ -122,6 +135,13 @@ Route::middleware(['auth'])->group(function () {
     // Jastiper Registration
     Route::get('/jastiper/daftar', [JastiperRegistrationController::class, 'create'])->name('jastiper.register.create');
     Route::post('/jastiper/daftar', [JastiperRegistrationController::class, 'store'])->name('jastiper.register.store');
+
+
+    // lihat profil jastiper
+    Route::get('/toko/{id}', [TokoController::class, 'show'])->name('toko.show');
+    Route::post('/toko/{id}/follow', [JastiperFollowController::class, 'toggle'])
+    ->middleware('auth')
+    ->name('toko.follow');
 });
 
 /*

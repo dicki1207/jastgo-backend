@@ -414,7 +414,6 @@
                     <p style="font-size: 2rem; font-weight: 700; margin: 0;">Rp
                         {{ number_format($total_final, 0, ',', '.') }}</p>
                     <p style="font-size: 0.9rem; color: #4b5563; margin-top: 0.5rem;">Lakukan pembayaran ke salah satu
-                        rekening di bawah ini. ID Pesanan Anda: **#{{ $pesananId }}**</p>
                 </div>
 
                 {{-- Daftar Rekening --}}
@@ -441,7 +440,7 @@
                 <form action="{{ route('checkout.process') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" name="current_step" value="3">
-                    <input type="hidden" name="pesanan_id" value="{{ $pesananId }}">
+
 
                     <div class="form-group">
                         <label for="bukti_transfer">Pilih Bukti Transfer (JPG, PNG)</label>

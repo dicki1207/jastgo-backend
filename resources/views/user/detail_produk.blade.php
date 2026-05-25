@@ -258,6 +258,13 @@
                             </div>
                         </div>
                     </div>
+
+
+                    <a href="{{ route('toko.show', $barang->jastiper->id) }}" class="btn btn-outline"
+                        style="margin-top:1rem;">
+                        Kunjungi Toko
+                    </a>
+
                     <div style="padding-top:1rem;border-top:1px solid #eee;">
                         <p style="margin:0;font-weight:600;">Harga Barang</p>
                         <p style="margin:0.4rem 0 0;font-size:2rem;font-weight:700;color:#333;">

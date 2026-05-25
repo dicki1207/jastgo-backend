@@ -40,4 +40,13 @@ class Jastiper extends Model
     {
         return $this->belongsTo(Rekening::class, 'rekening_id');
     }
+    
+    public function followers()
+{
+    return $this->hasMany(JastiperFollower::class);
+}
+
+
+
+
 }

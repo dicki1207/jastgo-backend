@@ -49,5 +49,11 @@ class User extends Authenticatable
         return $this->hasMany(Rekening::class);
     }
 
+    public function followedJastipers()
+{
+    return $this->hasMany(JastiperFollower::class);
+}
+
+
     
 }
