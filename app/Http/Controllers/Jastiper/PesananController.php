@@ -178,7 +178,7 @@ public function updateStatusToSiapDikirim(Pesanan $pesanan)
             abort(404);
         }
         
-        $pesanan->load(['user','jastiper','detailPesanans','pembayaran']);
+        $pesanan->load(['user','jastiper','detailPesanans','pembayaranUser']);
         return view('Jastiper.pesanan.show', compact('pesanan'));
     }
 }

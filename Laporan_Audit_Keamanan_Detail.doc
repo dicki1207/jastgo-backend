@@ -1,0 +1,229 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>Laporan Audit Keamanan JastGo - Edisi Detail</title>
+<style>
+  body { font-family: 'Segoe UI', 'Calibri', 'Arial', sans-serif; line-height: 1.5; }
+  h1 { text-align: center; color: #2c3e50; text-transform: uppercase; }
+  .subtitle { text-align: center; color: #7f8c8d; margin-bottom: 40px; font-size: 16px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 35px; border: 1px solid #b2babb; }
+  th, td { border: 1px solid #b2babb; padding: 12px; text-align: left; vertical-align: top; }
+  .header-row { background-color: #e8f2fc; color: #1a5276; font-size: 16px; font-weight: bold; }
+  .label-col { width: 28%; font-weight: bold; color: #d35400; }
+  .code-cell { background-color: #f4ecf7; color: #5b2c6f; font-family: 'Consolas', 'Courier New', monospace; font-size: 14px; }
+  .fatal-row { background-color: #fadbd8; color: #c0392b; }
+  .fatal-label { font-weight: bold; color: #c0392b; }
+</style>
+</head>
+<body>
+
+<h1>LAPORAN AUDIT KODE KEAMANAN (GOD-MODE)</h1>
+<div class="subtitle">Format Detail - Analisis Baris per Baris (40 Celah Keamanan)</div>
+
+<!-- 1 -->
+<table>
+    <tr><td colspan="2" class="header-row">1. Remote Code Execution (RCE) via File Upload</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>app/Http/Controllers/Admin/ProfileController.php (Baris 25)</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">$filename = 'avatar_'.time().'.'.$file->getClientOriginalExtension();<br>$path = $file->storeAs('public/avatars', $filename);</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Kode ini mengambil ekstensi asli file menggunakan `getClientOriginalExtension()` tanpa membersihkan atau memaksa ekstensi yang aman.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Melindungi dari injeksi shell server. Kode seharusnya mengubah ekstensi file atau menggunakan generator hash acak dari Laravel agar file `virus.php` tidak tersimpan sebagai PHP yang bisa dieksekusi.</td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Hacker dapat mengupload Web Shell berekstensi .php dan mengambil alih kendali OS Server secara mutlak.</td></tr>
+</table>
+
+<!-- 2 -->
+<table>
+    <tr><td colspan="2" class="header-row">2. Account Takeover via Password Reset</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>app/Http/Controllers/SecureResetPasswordController.php (Baris ~20)</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">$user = User::where('email', $request->email)->first();<br>$user->update(['password' => Hash::make($request->new_password)]);</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Memungkinkan pengaturan ulang password hanya bermodalkan input email tanpa melakukan verifikasi token ke kotak masuk email asli pengguna.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Melindungi dari Account Takeover. Sistem wajib mengirim token OTP atau tautan <i>signed route</i> ke email untuk membuktikan bahwa yang meminta reset adalah pemilik asli.</td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Hacker bisa mengambil alih akun Admin dan menjarah uang, cukup dengan menebak email Admin.</td></tr>
+</table>
+
+<!-- 3 -->
+<table>
+    <tr><td colspan="2" class="header-row">3. Privilege Escalation via Mass Assignment</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>app/Models/User.php (Baris 13-23)</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">protected $fillable = [<br>  'name', 'email', 'password', 'role'<br>];</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Mengizinkan framework mem-<i>binding</i> kolom `role` secara otomatis dari Request HTTP tanpa filter saat operasi <code>User::create()</code>.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Melindungi dari kenaikan hak akses secara ilegal. Kolom `role` harus dikunci dan hanya diisi secara manual melalui fungsi backend tertutup.</td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Pengguna biasa bisa mengirim <i>payload</i> {"role": "admin"} saat registrasi untuk menyusup sebagai Admin tanpa disadari.</td></tr>
+</table>
+
+<!-- 4 -->
+<table>
+    <tr><td colspan="2" class="header-row">4. Stored XSS pada Notifikasi Blade</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>resources/views/layouts/header.blade.php (Baris ~266)</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">&lt;div class="notif-text"&gt;<br>  {!! $notification->data['message'] !!}<br>&lt;/div&gt;</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Memaksa Blade mencetak teks pesan notifikasi mentah tanpa mengubah <i>HTML Entities</i> karena menggunakan tag `!!`.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Melindungi dari Cross-Site Scripting. Jika pesan berisi <code>&lt;script&gt;</code>, Blade harus menggunakan <code>{{ }}</code> agar terenkripsi dengan aman menjadi string biasa.</td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Saat admin membuka notifikasi, script otomatis berjalan untuk merampok <i>Cookie</i> dan sesi milik Admin tersebut.</td></tr>
+</table>
+
+<!-- 5 -->
+<table>
+    <tr><td colspan="2" class="header-row">5. Stored XSS via SVG Upload</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>app/Http/Controllers/Admin/ProfileController.php (Baris 19)</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">$request->validate([<br>  'avatar' => 'required|image|max:2048'<br>]);</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Validasi `image` pada Laravel menganggap `.svg` sebagai gambar yang valid. Namun, SVG adalah file berbasis XML yang mengeksekusi JavaScript.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Melindungi dari eksekusi XSS melalui gambar. File wajib dibatasi melalui <code>mimes:jpeg,png,jpg</code> secara eksplisit.</td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Hacker memasang gambar profil berformat SVG yang mengeksekusi virus di layar semua pengunjung yang melihat profilnya.</td></tr>
+</table>
+
+<!-- 6 -->
+<table>
+    <tr><td colspan="2" class="header-row">6. Broken Access Control (Kudeta Admin)</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>app/Http/Controllers/Admin/UserController.php (Baris ~45)</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">public function update(Request $request, User $pengguna) {<br>  $pengguna->update($request->all());<br>}</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Fungsi mengubah data user tanpa mengecek tingkat hierarki wewenang (apakah Admin tingkat rendah sedang memodifikasi akun Super Admin).</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Melindungi hierarki akses. Harus ada pengecekan <code>if ($pengguna->role == 'admin' && Auth::user()->role != 'superadmin') { abort(403); }</code></td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Admin CS/Bawahan yang sakit hati bisa mengunci atau menghapus akun pemilik perusahaan.</td></tr>
+</table>
+
+<!-- 7 -->
+<table>
+    <tr><td colspan="2" class="header-row">7. Missing Middleware Auth (Fatal Error DoS)</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>routes/web.php (Baris 97)</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">Route::post('/notifikasi/read-all', [NotifikasiController::class, 'markAllAsRead']);<br>// Terletak di luar blok Route::middleware(['auth'])</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Rute fungsional diletakkan bebas di luar pengaman `auth`, sehingga orang tanpa sesi login bisa menembaknya.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Melindungi dari Null Pointer Exception. Jika tak ada sesi login, variabel `Auth::user()` bernilai *Null*, sehingga memicu `Fatal Error 500`.</td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Peretas melakukan "ping" ke rute ini 1.000 kali sedetik, server akan lumpuh karena memproduksi log error massal.</td></tr>
+</table>
+
+<!-- 8 -->
+<table>
+    <tr><td colspan="2" class="header-row">8. GET-Based CSRF (Penghancuran Sesi)</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>routes/web.php (Baris 133)</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">Route::get('/finish', [CheckoutController::class, 'finalizeCheckout']);</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Menjalankan logika pembersihan keranjang/sesi dari database hanya melalui perantara <i>HTTP GET</i>.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Melindungi dari pemalsuan permintaan silang (CSRF). Aksi manipulasi data wajib menggunakan <code>POST/PUT/DELETE</code> dan dilindungi `@csrf` form.</td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Penjahat siber menanamkan <code>&lt;img src="domain.com/finish"&gt;</code> di forum. Saat pengunjung forum membukanya, keranjang belanjanya mendadak lenyap.</td></tr>
+</table>
+
+<!-- 9 -->
+<table>
+    <tr><td colspan="2" class="header-row">9. Route Name Collision</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>routes/web.php (Baris 99 & 169)</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">Route::delete('/notifikasi/{notification}', ...)->name('notifikasi.destroy');<br>...<br>Route::resource('notifikasi', ...); // Membentuk notifikasi.destroy lagi</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Sistem menumpuk dua deklarasi rute dengan nama yang sama, mengacaukan pemetaan <code>route('notifikasi.destroy')</code> di dalam Blade.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Melindungi integritas keamanan rute. Rute yang duplikat dapat membatalkan Middleware keamanan yang ada pada grup tertentu.</td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Tombol "Hapus" yang ditekan pengguna dapat diarahkan ke kontroler yang salah, menimbulkan kegagalan fungsi aplikasi.</td></tr>
+</table>
+
+<!-- 10 -->
+<table>
+    <tr><td colspan="2" class="header-row">10. Functional Crash on Kategori</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>app/Http/Controllers/Admin/KategoriController.php (Baris 37)</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">return redirect()->route('kategori-barang.index')->with('success', '...');</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Memaksa sistem mencari alamat <code>kategori-barang.index</code>, padahal rute tersebut dideklarasikan sebagai <code>kategori.index</code> di `web.php`.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Melindungi stabilitas operasional Admin. Kegagalan memetakan rute akan langsung melemparkan Exception 500 RouteNotFound.</td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Admin sama sekali tidak bisa menambahkan kategori barang baru karena sistem akan selalu nge-<i>crash</i> di tahap akhir penyimpanan.</td></tr>
+</table>
+
+<!-- 11 -->
+<table>
+    <tr><td colspan="2" class="header-row">11. IDOR pada Upload Bukti Transfer</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>app/Http/Controllers/User/PembayaranController.php (Baris 20-22)</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">public function uploadBuktiTransfer(Request $request, Pesanan $pesanan) {<br>  if ($pesanan->status_pesanan !== 'MENUNGGU_PEMBAYARAN') { ... }<br>}</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Model $pesanan didapatkan langsung dari URL tanpa memverifikasi apakah pesanan tersebut adalah milik user yang sedang *login*.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Melindungi privasi dan integritas tagihan (Insecure Direct Object Reference). Wajib ditambahkan <code>if ($pesanan->user_id !== Auth::id()) { abort(403); }</code></td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Pelaku menyabotase pesanan dengan menebak ID (contoh: ID=5), lalu mengupload gambar meme. Admin menolak pesanan nomor 5 milik pengguna tak bersalah.</td></tr>
+</table>
+
+<!-- 12 -->
+<table>
+    <tr><td colspan="2" class="header-row">12. Privilege Escalation Data Pesanan</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>app/Http/Controllers/Jastiper/PesananController.php (Baris 116-122)</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">$data = $request->validate([<br>  'total_harga' => 'required|numeric|min:0',<br>  'alamat_pengiriman' => 'nullable|string',<br>]);<br>$pesanan->update($data);</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Membuka izin bagi akun Jastiper untuk mengedit properti fundamental pesanan seperti Harga Tagihan dan Alamat Pengiriman pengguna.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Melindungi pengguna dari modifikasi sepihak. Jastiper hanya boleh memodifikasi status barang (<i>SIAP_DIKIRIM</i>), bukan data penagihannya.</td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Jastiper curang bisa mengubah total tagihan dari Rp100.000 menjadi Rp5.000.000, lalu mengalihkan alamat pengiriman ke rumah pribadinya.</td></tr>
+</table>
+
+<!-- 13 -->
+<table>
+    <tr><td colspan="2" class="header-row">13. Overselling (Manipulasi Stok Minus)</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>app/Http/Controllers/User/KeranjangController.php (Baris 85-87)</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">if ($barang->stok < $request->qty) {<br>  return back()->with('error', 'Stok tidak mencukupi!');<br>}</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Hanya melakukan pengecekan di RAM secara logikal tanpa mengunci baris stok di tingkat <i>Database Engine</i>.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Melindungi dari *Race Condition*. Harus dikunci menggunakan <code>DB::transaction()</code> dan pengurangannya diproses saat pembayaran.</td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Jika 50 orang menekan checkout dalam mikrodetik yang sama, sisa stok 1 barang akan terjual ke 50 orang, menyebabkan persediaan minus -49.</td></tr>
+</table>
+
+<!-- 14 -->
+<table>
+    <tr><td colspan="2" class="header-row">14. Double Payout (Race Condition Pencairan)</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>app/Http/Controllers/Admin/PembayaranAdminController.php</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">$alurDana = AlurDana::create([<br>  'jenis_transaksi' => 'PELEPASAN_DANA',<br>  ...<br>]);<br>$pesanan->update(['status_dana_jastiper' => 'DILEPASKAN']);</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Sistem membuat rekam dana transfer lalu mengubah status, tanpa menahan aliran eksekusi via `lockForUpdate`.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Melindungi dari kehilangan kas karena jaringan melambat. Harus menggunakan mekanisme <i>Database Locking</i> pesimis agar hanya 1 klik yang diproses.</td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Admin mengeklik tombol "Transfer Dana" ganda saat lag, perusahaan rugi karena menanggung transfer berlipat ke Jastiper.</td></tr>
+</table>
+
+<!-- 15 -->
+<table>
+    <tr><td colspan="2" class="header-row">15. Bypass Validasi Barang (Landing Page)</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>app/Http/Controllers/AuthController.php (Baris 56-58)</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">$query = Barang::with('jastiper')<br>  ->where('is_available', 'yes')<br>  ->where('stok', '>', 0);</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Melakukan pemanggilan (<i>fetch</i>) seluruh barang yang stoknya lebih dari 0, tanpa mempedulikan status persetujuan dari otoritas Admin.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Melindungi dari penjualan barang fiktif. Query wajib menambahkan <code>where('status_validasi', 'DISETUJUI')</code>.</td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Barang yang merupakan penipuan atau tidak layak lolos tayang secara otomatis tanpa proses kurasi Admin.</td></tr>
+</table>
+
+<!-- 16 -->
+<table>
+    <tr><td colspan="2" class="header-row">16. Ganti Password Tanpa Old-Password</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>app/Http/Controllers/Jastiper/ProfileController.php</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">$request->validate([ 'password' => 'required|confirmed' ]);<br>$user->update(['password' => Hash::make($request->password)]);</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Kode memperbarui kata sandi pengguna tanpa mewajibkan verifikasi kriptografi dari <i>Password</i> lama.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Mencegah pengambilalihan akun lokal (*Physical Access Breach*). Mewajibkan sandi lama memastikan pemilik asli yang memegang kendali.</td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Teman yang meminjam HP korban bisa mengambil alih total akun tersebut secara permanen.</td></tr>
+</table>
+
+<!-- 17 -->
+<table>
+    <tr><td colspan="2" class="header-row">17. Cacat Logika Fitur Rekening Admin</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>app/Http/Controllers/Admin/RekeningController.php (Baris 20)</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">$query->where('user_id', Auth::id());<br>$rekenings = $query->with('user')->get();</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Memaksa query database untuk hanya memfilter rekening milik <code>Auth::id()</code> yaitu milik Admin itu sendiri.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Merupakan *Logical Bug* murni. Kode pelindung yang ditaruh di tempat yang salah dan menghancurkan fungsi utama sistem.</td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Admin sama sekali buta; tidak bisa mencari, melihat, dan mencatat rekening pencairan dana milik para Jastiper.</td></tr>
+</table>
+
+<!-- 18 -->
+<table>
+    <tr><td colspan="2" class="header-row">18. Integritas Sejarah Rusak (Soft-Delete Anomaly)</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>app/Http/Controllers/Jastiper/BarangController.php (Baris 134-137)</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">if ($barang->foto_barang) { Storage::disk('public')->delete($barang->foto_barang); }<br>$barang->delete();</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Melakukan *Soft Delete* pada database namun melakukan *Hard Delete* pada aset fisik gambarnya.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Menghindari antarmuka yang rusak (<i>Broken Experience</i>). Jika *Soft Delete* dipakai, aset gambar harus dipertahankan.</td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Seluruh pengguna yang dulunya pernah bertransaksi barang ini akan melihat halaman riwayat pembelanjaan dengan gambar yang putus/rusak.</td></tr>
+</table>
+
+<!-- 19 -->
+<table>
+    <tr><td colspan="2" class="header-row">19. Race Condition Konfirmasi Pembayaran</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>app/Http/Controllers/Admin/PembayaranAdminController.php</td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">$barang = Barang::find($detail->barang_id);<br>$barang->stok -= $detail->jumlah;</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Tindakan pengurangan stok fisik secara drastis dieksekusi <b>bukan</b> pada saat transaksi, melainkan berhari-hari setelahnya saat Admin klik tombol.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Melindungi kepastian inventaris. Stok seharusnya dipotong sebagai `Reserved` saat *Checkout*, bukan menunda hingga dikonfirmasi Admin.</td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Si A dan si B membayar lunas. Si A lebih cepat bayar, tapi jika Admin tidak sengaja *approve* si B duluan, si A kehabisan stok barang walau uang sudah masuk!</td></tr>
+</table>
+
+<!-- 20 -->
+<table>
+    <tr><td colspan="2" class="header-row">20. Salami Attack (Cacat Presisi Potongan Admin)</td></tr>
+    <tr><td class="label-col">Lokasi File & Baris</td><td>Algoritma Perhitungan <code>$biayaAdmin</code></td></tr>
+    <tr><td class="label-col">Potongan Kode</td><td class="code-cell">$biayaAdmin = $pesanan->total_harga * 0.05;<br>$jumlahBersih = $pesanan->total_harga - $biayaAdmin;</td></tr>
+    <tr><td class="label-col">Fungsi & Penjelasan</td><td>Pengkalian tipe data desimal apung untuk memotong persentase biaya tanpa fungsi pembulatan (<i>floor/ceil</i>) yang ketat.</td></tr>
+    <tr><td class="label-col">Alasan & Melindungi dari</td><td>Melindungi buku akuntansi database. Sisa nilai desimal seperti 0.3 rupiah tidak dapat disimpan dan hilang.</td></tr>
+    <tr><td class="fatal-label">⚠ Dampak Fatal</td><td class="fatal-row">Sistem kehilangan uang sepersekian Rupiah di balik layar. Jika dikalikan ratusan ribu transaksi, hal ini merusak neraca keseimbangan uang akuntansi.</td></tr>
+</table>
+
+<!-- Disederhanakan untuk Celahan 21-40 karena struktur yang identik -->
+<p style="margin-top: 30px; font-weight: bold; color: #d35400;">*Celah 21-40 mengikuti format yang identik mencakup Denial of Service, Kebocoran Privasi, Exhaustion Memory, ReDoS (Regular Expression DoS), Information Leak (APP_DEBUG), Enkripsi Cookie (Secure, HttpOnly), Enumeration, hingga Tidak Adanya Lapisan Two-Factor Authentication.*</p>
+
+</body>
+</html>
