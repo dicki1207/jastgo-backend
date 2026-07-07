@@ -1,59 +1,92 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<div align="center">
+  <h1>🛒 JastGo - Backend (Laravel)</h1>
+  <p>Sistem API & Web Admin untuk Aplikasi JastGo (Jasa Titip Go)</p>
+</div>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+---
 
-## About Laravel
+## 📌 Deskripsi Proyek
+**JastGo Backend** adalah sistem pusat (API & Admin Panel) yang mengatur seluruh manajemen data dari aplikasi **JastGo**. Dibangun menggunakan framework **Laravel**, sistem ini menangani autentikasi, manajemen pesanan Jastip, riwayat transaksi, hingga integrasi pembayaran pihak ketiga.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🛠️ Persyaratan Sistem (Prerequisites)
+Sebelum menjalankan proyek ini, pastikan komputer/laptop Anda sudah memiliki:
+- **PHP** >= 8.1
+- **Composer** (Package Manager PHP)
+- **MySQL / MariaDB** (Disarankan menggunakan **Laragon** atau **XAMPP**)
+- **Git**
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 🚀 Panduan Instalasi (Step-by-Step)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Ikuti langkah-langkah di bawah ini untuk menjalankan backend JastGo secara lokal di laptop Anda:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 1. Clone Repository
+Buka terminal (Command Prompt / PowerShell / Git Bash) dan ketikkan perintah berikut:
+```bash
+git clone https://github.com/dicki1207/jastgo-backend.git
+cd jastgo-backend
+```
 
-## Laravel Sponsors
+### 2. Install Dependensi (Packages)
+Jalankan composer untuk menginstal semua *library* PHP yang dibutuhkan:
+```bash
+composer install
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 3. Konfigurasi Environment (.env)
+Duplikat file pengaturan bawaan untuk membuat file `.env`:
+```bash
+cp .env.example .env
+```
+*(Untuk pengguna Windows CMD bisa memakai perintah: `copy .env.example .env`)*
 
-### Premium Partners
+Buka file `.env` di teks editor (misalnya VS Code) dan sesuaikan bagian **Database** dengan database di komputer Anda:
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=jastiplocal
+DB_USERNAME=root
+DB_PASSWORD=  # (Kosongkan jika menggunakan XAMPP/Laragon bawaan)
+```
+> **Penting:** Pastikan Anda sudah membuat database kosong (misalnya bernama `jastiplocal`) di phpMyAdmin / HeidiSQL Anda.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### 4. Generate Application Key
+Buat kunci enkripsi keamanan aplikasi:
+```bash
+php artisan key:generate
+```
 
-## Contributing
+### 5. Migrasi Database & Seeder
+Buat tabel-tabel di database secara otomatis beserta data awalnya (jika ada):
+```bash
+php artisan migrate --seed
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 6. Link Storage (Untuk Menampilkan Gambar)
+Agar gambar profil dan produk bisa dimunculkan dan diakses secara publik, jalankan perintah ini:
+```bash
+php artisan storage:link
+```
 
-## Code of Conduct
+### 7. Jalankan Server Lokal
+Nyalakan mesin server Laravel Anda:
+```bash
+php artisan serve
+```
+Voila! Backend Anda sekarang sudah hidup dan berjalan di `http://127.0.0.1:8000`.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+---
 
-## Security Vulnerabilities
+## 🔗 Menghubungkan Backend ke Aplikasi Flutter
+Saat Anda menjalankan **Aplikasi JastGo (Flutter)** di HP atau Emulator, HP tersebut tidak akan bisa membaca alamat `127.0.0.1`. 
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Anda wajib mengubah **IP Address API** di kodingan Flutter Anda (file `api_service.dart`) menggunakan **IP Address WiFi** laptop Anda (contoh: `192.168.1.10:8000/api`). Pastikan laptop dan HP tersambung ke jaringan WiFi yang sama!
 
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+---
+<div align="center">
+  <i>Dibuat dengan ❤️ untuk proyek JastGo</i>
+</div>
