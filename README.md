@@ -48,7 +48,7 @@ Buka file `.env` di teks editor (misalnya VS Code) dan sesuaikan bagian **Databa
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=jastiplocal
+DB_DATABASE=jastip
 DB_USERNAME=root
 DB_PASSWORD=  # (Kosongkan jika menggunakan XAMPP/Laragon bawaan)
 ```
@@ -64,7 +64,7 @@ php artisan key:generate
 **Opsi A (Disarankan - Beserta Data Lengkap):**
 Kami sudah menyediakan file `jastgo_db.sql` yang berisi seluruh data lengkap (beserta produk, jastiper, dan riwayat pesanan). 
 1. Buka phpMyAdmin (misal: `http://localhost/phpmyadmin`).
-2. Pilih database `jastiplocal`.
+2. Pilih atau buat database baru bernama `jastip`.
 3. Klik menu **Import**, pilih file `jastgo_db.sql` yang ada di folder ini, lalu klik **Go/Kirim**.
 
 **Opsi B (Database Kosong / Mulai dari Nol):**
