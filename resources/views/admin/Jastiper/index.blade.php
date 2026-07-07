@@ -15,15 +15,17 @@
         {{-- SEARCH + TOTAL + ADD BUTTON --}}
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="user-controls" style="display:flex; align-items:center; gap:8px;">
-                <input id="searchJastiper" class="user-search-input" type="text"
-                    placeholder="Cari berdasarkan ID / Nama Toko / Username"
-                    style="padding:8px 12px; border:1px solid #DDE0E3; border-radius:8px; width:320px;"
-                    value="{{ request('q', $q ?? '') }}">
+                <form action="{{ route('admin.jastiper.index') }}" method="GET" style="display:flex; gap:8px; align-items:center; margin:0;">
+                    <input name="q" id="searchJastiper" class="user-search-input" type="text"
+                        placeholder="Cari berdasarkan ID / Nama Toko / Username"
+                        style="padding:8px 12px; border:1px solid #DDE0E3; border-radius:8px; width:320px;"
+                        value="{{ request('q', $q ?? '') }}">
 
-                <button id="btnSearchJastiper" class="btn-search"
-                    style="padding:8px 18px; border-radius:8px; border:1px solid #2b6be6; background:#fff; color:#2b6be6;">
-                    Search
-                </button>
+                    <button type="submit" id="btnSearchJastiper" class="btn-search"
+                        style="padding:8px 18px; border-radius:8px; border:1px solid #2b6be6; background:#fff; color:#2b6be6;">
+                        Search
+                    </button>
+                </form>
 
                 <div style="margin-left:8px; color:#6c7680;">
                     Total: <strong>{{ $jastipers->total() ?? $jastipers->count() }}</strong>
@@ -48,7 +50,7 @@
                         <th class="col-rekening">Rekening Utama</th>
                         <th class="col-tgl">Rating</th>
                         <th class="col-tgl">Tanggal Daftar</th>
-                        {{-- <th class="col-actions" style="text-align:right">Operasi</th> --}}
+                        <th class="col-actions" style="text-align:center">Operasi</th>
                     </tr>
                 </thead>
 
@@ -76,6 +78,21 @@
 
                             <td class="col-tgl">{{ number_format($j->rating, 1) }}</td>
                             <td class="col-tgl">{{ $j->tanggal_daftar?->format('Y-m-d') ?? '-' }}</td>
+
+                            <td class="col-actions" style="text-align:center;">
+                                <form action="{{ route('admin.jastiper.ban', $j->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin memblokir/mengaktifkan jastiper ini?');">
+                                    @csrf
+                                    @if($j->user && $j->user->is_banned)
+                                        <button type="submit" class="btn btn-sm btn-success" style="font-size: 12px; padding: 4px 8px; border-radius: 4px;" title="Aktifkan Jastiper">
+                                            Unban
+                                        </button>
+                                    @else
+                                        <button type="submit" class="btn btn-sm btn-danger" style="font-size: 12px; padding: 4px 8px; border-radius: 4px;" title="Blokir Jastiper">
+                                            Ban
+                                        </button>
+                                    @endif
+                                </form>
+                            </td>
 
                             {{-- <td class="col-actions" style="text-align:right;">
                         <div class="table-actions">
@@ -111,38 +128,6 @@
 @endsection
 
 @push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Fungsi filter (Client-Side)
-            function filterTable(q) {
-                q = (q || '').toLowerCase().trim();
-                if (!q) {
-                    document.querySelectorAll('#jastipersTable tbody tr').forEach(tr => tr.style.display = '');
-                    return;
-                }
-                document.querySelectorAll('#jastipersTable tbody tr').forEach(function(tr) {
-                    const txt = (tr.textContent || tr.innerText || '').toLowerCase();
-                    tr.style.display = (txt.indexOf(q) !== -1) ? '' : 'none';
-                });
-            }
-
-            const btn = document.getElementById('btnSearchJastiper');
-            const input = document.getElementById('searchJastiper');
-
-            if (btn && input) {
-                btn.addEventListener('click', function() {
-                    // Jika Anda menggunakan pencarian sisi server, hapus baris filterTable(input.value)
-                    // dan uncomment baris window.location
-                    // window.location = '{{ url()->current() }}?q=' + encodeURIComponent(input.value);
-                    filterTable(input.value);
-                });
-                input.addEventListener('keyup', function(e) {
-                    if (e.key === 'Enter') {
-                        // window.location = '{{ url()->current() }}?q=' + encodeURIComponent(this.value);
-                        filterTable(this.value);
-                    }
-                });
-            }
-        });
-    </script>
+    {{-- Search ditangani di backend (server-side). --}}
 @endpush
+

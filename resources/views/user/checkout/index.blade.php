@@ -406,78 +406,280 @@
                 </form>
 
             @elseif ($step == 3)
-                {{-- STEP 3: PEMBAYARAN --}}
-                <h2 style="margin-bottom: 1.5rem;">Lakukan Pembayaran</h2>
+                {{-- STEP 3: PILIH METODE PEMBAYARAN (CORE API) --}}
+                <h2 style="margin-bottom: 1.5rem;">Pilih Metode Pembayaran</h2>
 
                 <div style="padding: 1.5rem; border: 2px solid #006FFF; border-radius: 12px; background: #e0f0ff; margin-bottom: 2rem;">
                     <h3 style="color: #006FFF; margin-top: 0;">Total yang Harus Dibayar:</h3>
                     <p style="font-size: 2rem; font-weight: 700; margin: 0;">Rp
                         {{ number_format($total_final, 0, ',', '.') }}</p>
-                    <p style="font-size: 0.9rem; color: #4b5563; margin-top: 0.5rem;">Lakukan pembayaran ke salah satu
+                    <p style="font-size: 0.9rem; color: #4b5563; margin-top: 0.5rem;">Pilih metode pembayaran yang Anda inginkan di bawah ini.</p>
                 </div>
 
-                {{-- Daftar Rekening --}}
-                <div style="margin-bottom: 2rem;">
-                    <h4 style="color: #333; border-bottom: 1px solid #eee; padding-bottom: 0.5rem;">Rekening Pembayaran (Admin)</h4>
-
-                    @forelse ($rekeningAdmin as $rekening)
-                        <div style="border: 1px solid #ddd; border-left: 5px solid #006FFF; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                            <span class="font-bold">{{ $rekening->nama_penyedia }} - {{ $rekening->tipe_rekening }}</span>
-                            <div style="margin-top: 0.5rem;">
-                                <span class="font-bold text-blue">{{ $rekening->nomor_akun }}</span>
-                                <small>(A/N: {{ $rekening->nama_pemilik }})</small>
-                                <button
-                                    onclick="navigator.clipboard.writeText('{{ $rekening->nomor_akun }}'); alert('Nomor rekening disalin!');"
-                                    style="background: none; border: none; color: gray; cursor: pointer;"><i class="fas fa-copy"></i></button>
-                            </div>
-                        </div>
-                    @empty
-                        <p>Maaf, belum ada rekening pembayaran yang aktif saat ini. Silakan hubungi Admin.</p>
-                    @endforelse
-                </div>
-
-                <h4 style="margin-bottom: 1.5rem; color: #333;">Unggah Bukti Transfer</h4>
-                <form action="{{ route('checkout.process') }}" method="POST" enctype="multipart/form-data">
+                <form action="{{ route('checkout.process') }}" method="POST">
                     @csrf
                     <input type="hidden" name="current_step" value="3">
 
+                    <style>
+                        /* Accordion Styles */
+                        .payment-accordion {
+                            margin-bottom: 2rem;
+                            border-radius: 12px;
+                            overflow: hidden;
+                            border: 1px solid #ddd;
+                        }
+                        
+                        .payment-group {
+                            border-bottom: 1px solid #eee;
+                        }
+                        .payment-group:last-child {
+                            border-bottom: none;
+                        }
+                        
+                        .payment-group-header {
+                            background: #f8f9fa;
+                            padding: 1rem 1.5rem;
+                            cursor: pointer;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            font-weight: bold;
+                            font-size: 1.1rem;
+                            color: #333;
+                            transition: background 0.3s;
+                        }
+                        .payment-group-header:hover {
+                            background: #f1f3f5;
+                        }
+                        
+                        .payment-group-content {
+                            display: none;
+                            padding: 1.5rem;
+                            background: white;
+                        }
+                        .payment-group.active .payment-group-content {
+                            display: block;
+                        }
+                        .payment-group.active .payment-group-header .toggle-icon {
+                            transform: rotate(180deg);
+                        }
+                        
+                        .toggle-icon {
+                            transition: transform 0.3s;
+                        }
+                        
+                        .payment-grid {
+                            display: grid;
+                            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                            gap: 1rem;
+                        }
+                        
+                        .payment-method-card {
+                            border: 1px solid #ccc;
+                            border-radius: 8px;
+                            padding: 1rem;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            gap: 1rem;
+                            transition: all 0.2s;
+                        }
+                        .payment-method-card:hover {
+                            border-color: #006FFF;
+                            background: #f0f8ff;
+                        }
+                        .payment-method-card input[type="radio"] {
+                            accent-color: #006FFF;
+                            width: 18px;
+                            height: 18px;
+                        }
+                        .payment-method-card img {
+                            max-width: 60px;
+                            max-height: 25px;
+                            object-fit: contain;
+                        }
+                        
+                        /* Highlight selected radio card */
+                        input[type="radio"]:checked + .method-info {
+                            font-weight: bold;
+                            color: #006FFF;
+                        }
+                    </style>
 
-                    <div class="form-group">
-                        <label for="bukti_transfer">Pilih Bukti Transfer (JPG, PNG)</label>
-                        <div class="file-upload-wrapper">
-                            <input type="file" id="bukti_transfer" name="bukti_transfer"
-                                accept="image/jpeg,image/png,image/jpg" required
-                                onchange="document.getElementById('file-name').innerText = this.files[0].name">
-                            <span id="file-name"><i class="fas fa-upload"></i> Klik untuk Unggah Gambar</span>
+                    <div class="payment-accordion" id="paymentAccordion">
+                        <!-- Group 1: Transfer Bank -->
+                        <div class="payment-group active">
+                            <div class="payment-group-header" onclick="toggleAccordion(this)">
+                                <span><i class="fas fa-university text-blue"></i> Transfer Bank (Virtual Account)</span>
+                                <i class="fas fa-chevron-down toggle-icon"></i>
+                            </div>
+                            <div class="payment-group-content">
+                                <div class="payment-grid">
+                                    <label class="payment-method-card">
+                                        <input type="radio" name="payment_method" value="bank_transfer_bca" required>
+                                        <div class="method-info" style="display: flex; flex-direction: column; gap: 5px;">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Bank_Central_Asia.svg" alt="BCA">
+                                            <span>BCA</span>
+                                        </div>
+                                    </label>
+                                    <label class="payment-method-card">
+                                        <input type="radio" name="payment_method" value="bank_transfer_bni">
+                                        <div class="method-info" style="display: flex; flex-direction: column; gap: 5px;">
+                                            <img src="https://upload.wikimedia.org/wikipedia/id/5/55/BNI_logo.svg" alt="BNI">
+                                            <span>BNI</span>
+                                        </div>
+                                    </label>
+                                    <label class="payment-method-card">
+                                        <input type="radio" name="payment_method" value="bank_transfer_bri">
+                                        <div class="method-info" style="display: flex; flex-direction: column; gap: 5px;">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2e/BRI_2020.svg" alt="BRI">
+                                            <span>BRI</span>
+                                        </div>
+                                    </label>
+                                    <label class="payment-method-card">
+                                        <input type="radio" name="payment_method" value="bank_transfer_echannel">
+                                        <div class="method-info" style="display: flex; flex-direction: column; gap: 5px;">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/a/ad/Bank_Mandiri_logo_2016.svg" alt="Mandiri">
+                                            <span>Mandiri Bill</span>
+                                        </div>
+                                    </label>
+                                    <label class="payment-method-card">
+                                        <input type="radio" name="payment_method" value="bank_transfer_permata">
+                                        <div class="method-info" style="display: flex; flex-direction: column; gap: 5px;">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/3/38/PermataBank_logo.svg" alt="Permata">
+                                            <span>Permata</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
-                        @error('bukti_transfer')
-                            <p style="color: red; font-size: 0.9em;">{{ $message }}</p>
-                        @enderror
+
+                        <!-- Group 2: E-Wallet & QRIS -->
+                        <div class="payment-group">
+                            <div class="payment-group-header" onclick="toggleAccordion(this)">
+                                <span><i class="fas fa-wallet text-blue"></i> E-Wallet & QRIS</span>
+                                <i class="fas fa-chevron-down toggle-icon"></i>
+                            </div>
+                            <div class="payment-group-content">
+                                <div class="payment-grid">
+                                    <label class="payment-method-card">
+                                        <input type="radio" name="payment_method" value="gopay">
+                                        <div class="method-info" style="display: flex; flex-direction: column; gap: 5px;">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg" alt="GoPay">
+                                            <span>GoPay</span>
+                                        </div>
+                                    </label>
+                                    <label class="payment-method-card">
+                                        <input type="radio" name="payment_method" value="qris">
+                                        <div class="method-info" style="display: flex; flex-direction: column; gap: 5px;">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Logo_ovo_purple.svg" alt="OVO">
+                                            <span>OVO</span>
+                                        </div>
+                                    </label>
+                                    <label class="payment-method-card">
+                                        <input type="radio" name="payment_method" value="qris">
+                                        <div class="method-info" style="display: flex; flex-direction: column; gap: 5px;">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg" alt="DANA">
+                                            <span>DANA</span>
+                                        </div>
+                                    </label>
+                                    <label class="payment-method-card">
+                                        <input type="radio" name="payment_method" value="shopeepay">
+                                        <div class="method-info" style="display: flex; flex-direction: column; gap: 5px;">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/f/fe/Shopee.svg" alt="ShopeePay" style="max-width: 50px;">
+                                            <span>ShopeePay</span>
+                                        </div>
+                                    </label>
+                                    <label class="payment-method-card" style="grid-column: 1 / -1; justify-content: center;">
+                                        <input type="radio" name="payment_method" value="qris">
+                                        <div class="method-info" style="display: flex; align-items: center; gap: 10px;">
+                                            <img src="https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_QRIS.svg" alt="QRIS" style="max-height: 35px;">
+                                            <span>Scan QRIS (Untuk Semua E-Wallet & M-Banking)</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    <script>
+                        function toggleAccordion(header) {
+                            const group = header.parentElement;
+                            const isActive = group.classList.contains('active');
+                            
+                            // Close all other groups
+                            document.querySelectorAll('.payment-group').forEach(g => {
+                                g.classList.remove('active');
+                            });
+                            
+                            // Toggle current group
+                            if (!isActive) {
+                                group.classList.add('active');
+                            }
+                        }
+                    </script>
 
                     <div class="text-right">
                         <a href="{{ route('checkout.previous') }}" class="btn-back btn-base">Kembali</a>
-                        <button type="submit" class="btn-primary-blue btn-base">Konfirmasi Pembayaran</button>
+                        <button type="submit" class="btn-primary-blue btn-base">Bayar Sekarang</button>
                     </div>
                 </form>
 
             @elseif ($step == 4)
-                {{-- STEP 4: KONFIRMASI AKHIR --}}
-                <h2 style="margin-bottom: 1.5rem;">Pembayaran Berhasil Diunggah!</h2>
-                <div style="text-align: center; padding: 3rem; border: 1px solid #eee; border-radius: 12px;">
+                {{-- STEP 4: KONFIRMASI AKHIR / TAMPILKAN VA ATAU QR CODE --}}
+                <h2 style="margin-bottom: 1.5rem;">Instruksi Pembayaran</h2>
+                
+                <div style="text-align: center; padding: 2rem; border: 1px solid #eee; border-radius: 12px; background: #fff;">
+                    
+                    <p style="font-size: 1.2rem; color: #555; margin-bottom: 1rem;">Silakan lakukan pembayaran sebesar:</p>
+                    <p style="font-size: 2.5rem; font-weight: 700; color: #006FFF; margin-bottom: 2rem;">Rp {{ number_format($total_final, 0, ',', '.') }}</p>
 
-                    <i class="fas fa-clock" style="font-size: 4rem; color: orange; margin-bottom: 1.5rem;"></i>
+                    @if ($paymentType == 'bank_transfer')
+                        <div style="background: #f8f9fa; padding: 2rem; border-radius: 8px; display: inline-block; min-width: 300px;">
+                            <p style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem; text-transform: uppercase;">Nomor Virtual Account ({{ strtoupper($paymentBank == 'echannel' ? 'mandiri' : $paymentBank) }})</p>
+                            <p style="font-size: 2rem; font-family: monospace; font-weight: bold; letter-spacing: 2px; color: #333; margin-bottom: 1rem;">
+                                {{ $paymentInfo }}
+                            </p>
+                            <button onclick="navigator.clipboard.writeText('{{ $paymentInfo }}'); alert('Nomor VA disalin!');" style="padding: 0.5rem 1rem; background: #e0e0e0; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                                <i class="fas fa-copy"></i> Salin Nomor
+                            </button>
+                        </div>
+                        <p style="margin-top: 2rem; color: #666;">Buka aplikasi M-Banking atau ATM Anda, lalu pilih menu Transfer > Virtual Account.</p>
 
-                    <p class="font-bold" style="margin-bottom: 0.5rem;">
-                        Bukti transfer Anda telah diterima dan sedang diverifikasi oleh Admin. Status pesanan Anda saat
-                        ini adalah **MENUNGGU KONFIRMASI ADMIN**.
-                    </p>
+                    @elseif ($paymentType == 'gopay' || $paymentType == 'qris' || $paymentType == 'shopeepay')
+                        <div style="background: #f8f9fa; padding: 2rem; border-radius: 8px; display: inline-block;">
+                            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem; text-transform: uppercase;">Scan QR Code atau Klik Link ({{ strtoupper($paymentType) }})</p>
+                            
+                            @if(filter_var($paymentInfo, FILTER_VALIDATE_URL))
+                                <!-- Jika berupa URL Deeplink (GoPay/ShopeePay) -->
+                                <a href="{{ $paymentInfo }}" target="_blank" style="display: inline-block; background: #00AA5B; color: white; padding: 1rem 2rem; border-radius: 50px; font-weight: bold; text-decoration: none; font-size: 1.2rem;">
+                                    Buka Aplikasi {{ strtoupper($paymentType) }}
+                                </a>
+                            @else
+                                <!-- Jika berupa Gambar QR Code -->
+                                <img src="{{ $paymentInfo }}" alt="QR Code" style="max-width: 250px; border: 1px solid #ddd; padding: 10px; background: white; border-radius: 10px;">
+                            @endif
+                        </div>
+                        <p style="margin-top: 2rem; color: #666;">Pindai QR Code di atas menggunakan aplikasi E-Wallet pilihan Anda, atau klik tombol jika membukanya di HP.</p>
+                    @else
+                        <p style="color: red;">Metode pembayaran tidak dikenali atau gagal dimuat.</p>
+                    @endif
 
-                    <p style="margin-bottom: 2rem;">
-                        Mohon tunggu maksimal 1x24 jam.
-                    </p>
-
-                    <a href="{{ route('checkout.finish') }}" class="btn-primary-blue btn-base">Lihat Riwayat Pesanan</a>
+                    <div style="margin-top: 3rem; border-top: 1px solid #eee; padding-top: 2rem;">
+                        <p style="margin-bottom: 1rem; color: #333;">Setelah Anda melakukan pembayaran, status pesanan akan otomatis terupdate.</p>
+                        
+                        <div style="display: flex; gap: 1rem; justify-content: center; align-items: center; flex-wrap: wrap;">
+                            <a href="{{ route('checkout.finish') }}" class="btn-primary-blue btn-base" style="background: #28a745;">Saya Sudah Bayar (Lihat Riwayat)</a>
+                            
+                            <!-- TOMBOL SIMULASI (DEV ONLY) -->
+                            <form action="{{ route('checkout.simulate') }}" method="POST" style="margin: 0;">
+                                @csrf
+                                <button type="submit" class="btn-primary-blue btn-base" style="background: #dc3545;" onclick="return confirm('Simulasi pembayaran ini akan langsung mengubah status menjadi DIPROSES/MENUNGGU JASTIPER. Lanjutkan?')">
+                                    <i class="fas fa-magic"></i> Simulasi Pembayaran (Bypass)
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
 
             @endif

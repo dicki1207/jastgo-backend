@@ -75,34 +75,61 @@
             @error('is_available') <div class="text-danger">{{ $message }}</div> @enderror
         </div>
 
-        {{-- Foto Barang --}}
+        {{-- Foto Barang (Maksimal 3 Foto) --}}
         <div class="form-group">
-            <label class="form-label">Foto Barang (opsional)</label>
-
-            @if($barang->foto_barang && file_exists(storage_path('app/public/' . $barang->foto_barang)))
-                <div style="margin-bottom:8px;">
-                    <img id="currentPhoto" src="{{ asset('storage/' . $barang->foto_barang) }}" alt="foto" style="height:80px;border-radius:6px; object-fit:cover;">
+            <label class="form-label">Foto Barang (opsional, maks 3 foto)</label>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 10px;">
+                
+                {{-- FOTO 1 --}}
+                <div class="photo-upload-box">
+                    <label style="font-weight: 600; font-size: 0.9rem; color: #555;">Foto Utama</label>
+                    @if($barang->foto_barang)
+                        <div class="current-photo">
+                            <img src="{{ asset('storage/' . $barang->foto_barang) }}" alt="foto 1">
+                            <label class="remove-photo-label">
+                                <input type="checkbox" name="remove_foto" value="1"> Hapus
+                            </label>
+                        </div>
+                    @endif
+                    <input type="file" name="foto_barang" id="fotoInput1" class="form-control" accept=".jpg,.jpeg,.png">
+                    <div id="previewWrapper1" class="preview-wrapper"></div>
+                    @error('foto_barang') <div class="text-danger" style="font-size:0.8rem;">{{ $message }}</div> @enderror
                 </div>
 
-                <label class="form-help" style="display:block; margin-bottom:6px;">
-                    Jika ingin ganti foto, pilih file baru. Centang hapus jika ingin menghapus foto lama tanpa mengganti.
-                </label>
-
-                <div style="display:flex; gap:12px; align-items:center; margin-bottom:8px;">
-                    <input type="file" name="foto_barang" id="fotoInput" class="form-control" accept=".jpg,.jpeg,.png">
-                    <label style="font-weight:600; display:flex; align-items:center; gap:8px;">
-                        <input type="checkbox" name="remove_foto" value="1" {{ old('remove_foto') ? 'checked' : '' }}> Hapus foto lama
-                    </label>
+                {{-- FOTO 2 --}}
+                <div class="photo-upload-box">
+                    <label style="font-weight: 600; font-size: 0.9rem; color: #555;">Foto Tambahan 1</label>
+                    @if($barang->foto_barang_2)
+                        <div class="current-photo">
+                            <img src="{{ asset('storage/' . $barang->foto_barang_2) }}" alt="foto 2">
+                            <label class="remove-photo-label">
+                                <input type="checkbox" name="remove_foto_2" value="1"> Hapus
+                            </label>
+                        </div>
+                    @endif
+                    <input type="file" name="foto_barang_2" id="fotoInput2" class="form-control" accept=".jpg,.jpeg,.png">
+                    <div id="previewWrapper2" class="preview-wrapper"></div>
+                    @error('foto_barang_2') <div class="text-danger" style="font-size:0.8rem;">{{ $message }}</div> @enderror
                 </div>
 
-                <div id="previewWrapper" style="margin-top:6px;"></div>
-            @else
-                <input type="file" name="foto_barang" id="fotoInput" class="form-control" accept=".jpg,.jpeg,.png">
-                <div id="previewWrapper" style="margin-top:8px;"></div>
-            @endif
+                {{-- FOTO 3 --}}
+                <div class="photo-upload-box">
+                    <label style="font-weight: 600; font-size: 0.9rem; color: #555;">Foto Tambahan 2</label>
+                    @if($barang->foto_barang_3)
+                        <div class="current-photo">
+                            <img src="{{ asset('storage/' . $barang->foto_barang_3) }}" alt="foto 3">
+                            <label class="remove-photo-label">
+                                <input type="checkbox" name="remove_foto_3" value="1"> Hapus
+                            </label>
+                        </div>
+                    @endif
+                    <input type="file" name="foto_barang_3" id="fotoInput3" class="form-control" accept=".jpg,.jpeg,.png">
+                    <div id="previewWrapper3" class="preview-wrapper"></div>
+                    @error('foto_barang_3') <div class="text-danger" style="font-size:0.8rem;">{{ $message }}</div> @enderror
+                </div>
 
-            @error('foto_barang') <div class="text-danger">{{ $message }}</div> @enderror
-            <small class="form-help">Format: jpg, jpeg, png. Ukuran sesuai batas server (validasi di controller).</small>
+            </div>
+            <small class="form-help">Format: jpg, jpeg, png. Ukuran maksimal 2MB per foto.</small>
         </div>
 
         {{-- Tanggal Input --}}
@@ -123,33 +150,108 @@
 </div>
 @endsection
 
+@push('styles')
+<style>
+    .photo-upload-box {
+        border: 2px dashed #ddd;
+        border-radius: 12px;
+        padding: 15px;
+        background: #fafafa;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .photo-upload-box:hover {
+        border-color: #006FFF;
+        background: #f0f7ff;
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 111, 255, 0.1);
+    }
+    .current-photo {
+        position: relative;
+        width: 100%;
+        height: 120px;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #eee;
+        background: white;
+    }
+    .current-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+    .current-photo:hover img {
+        transform: scale(1.05);
+    }
+    .remove-photo-label {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(255, 49, 49, 0.9);
+        color: white;
+        padding: 5px;
+        text-align: center;
+        font-size: 0.8rem;
+        cursor: pointer;
+        margin: 0;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    .current-photo:hover .remove-photo-label {
+        opacity: 1;
+    }
+    .preview-wrapper {
+        margin-top: 5px;
+    }
+    .preview-wrapper img {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+</style>
+@endpush
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const input = document.getElementById('fotoInput');
-    const preview = document.getElementById('previewWrapper');
+    function setupImagePreview(inputId, previewId) {
+        const input = document.getElementById(inputId);
+        const preview = document.getElementById(previewId);
 
-    if (input) {
-        input.addEventListener('change', function () {
-            preview.innerHTML = '';
-            const file = this.files && this.files[0];
-            if (!file) return;
-            if (!file.type.startsWith('image/')) return;
+        if (input) {
+            input.addEventListener('change', function () {
+                preview.innerHTML = '';
+                const file = this.files && this.files[0];
+                if (!file) return;
+                if (!file.type.startsWith('image/')) return;
 
-            const img = document.createElement('img');
-            img.style.height = '80px';
-            img.style.borderRadius = '6px';
-            img.style.objectFit = 'cover';
-            img.alt = 'preview';
+                const img = document.createElement('img');
+                img.alt = 'preview';
 
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                img.src = e.target.result;
-                preview.appendChild(img);
-            };
-            reader.readAsDataURL(file);
-        });
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    img.src = e.target.result;
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
     }
+
+    setupImagePreview('fotoInput1', 'previewWrapper1');
+    setupImagePreview('fotoInput2', 'previewWrapper2');
+    setupImagePreview('fotoInput3', 'previewWrapper3');
 });
 </script>
 @endpush

@@ -13,7 +13,7 @@ class TokoController extends Controller
     public function show($id)
     {
         // Ambil data toko + produk
-        $toko = Jastiper::with('barangs')
+        $toko = Jastiper::with(['barangs', 'ulasans.user'])
             ->withCount('barangs')
             ->findOrFail($id);
 

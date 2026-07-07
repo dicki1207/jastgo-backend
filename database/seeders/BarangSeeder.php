@@ -22,14 +22,9 @@ class BarangSeeder extends Seeder
             return;
         }
 
-        // Ambil semua file dummy dari storage/app/public/barang/
-        $dummyPath = storage_path('app/public/barang');
-        $dummyFiles = File::files($dummyPath);
-
-        if (empty($dummyFiles)) {
-            $this->command->warn("Seeder Barang: folder storage/app/public/barang kosong.");
-            return;
-        }
+        // Ambil semua file dummy dari storage/app/public/barang/ (jika ada)
+        $dummyPath = storage_path('app/public/barangs');
+        $dummyFiles = File::isDirectory($dummyPath) ? File::files($dummyPath) : [];
 
         foreach ($jastipers as $jastiper) {
             $jumlahBarang = rand(3, 5); // 3-5 barang per jastiper
@@ -38,12 +33,12 @@ class BarangSeeder extends Seeder
                 // Pilih kategori random atau null
                 $kategori = $kategoris->isNotEmpty() && rand(0,1) ? $kategoris->random() : null;
 
-                // Pilih foto dummy random
-                $fotoFile = $dummyFiles[array_rand($dummyFiles)];
-                $fileName = basename($fotoFile);
-
-                // Salin ke storage/app/public/barangs (folder utama foto barang)
-                Storage::disk('public')->putFileAs('barangs', $fotoFile, $fileName);
+                $fileName = null;
+                if (!empty($dummyFiles)) {
+                    // Pilih foto dummy random
+                    $fotoFile = $dummyFiles[array_rand($dummyFiles)];
+                    $fileName = 'barangs/' . basename($fotoFile);
+                }
 
                 Barang::create([
                     'jastiper_id'     => $jastiper->id,
@@ -54,7 +49,7 @@ class BarangSeeder extends Seeder
                     'harga'           => rand(10000, 500000),
                     'stok'            => rand(1, 50),
                     'is_available'    => ['yes','no'][rand(0,1)],
-                    'foto_barang'     => 'barangs/' . $fileName,
+                    'foto_barang'     => $fileName, // Bisa null jika tidak ada gambar
                     // 'status_validasi' => 'pending',
                     'tanggal_input'   => now()->subDays(rand(0, 10)),
                 ]);

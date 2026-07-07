@@ -7,6 +7,7 @@
     <title>@yield('title', 'Admin Dashboard')</title>
     <meta name="description" content="@yield('meta_description','Ela Admin - HTML5 Admin Template')">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     {{-- ICON --}}
      <link rel="apple-touch-icon" href="{{ asset('admin/assets/images/logo.png') }}">
@@ -42,6 +43,19 @@
         #flotLine5  { height: 105px; }
         #flotBarChart { height: 150px; }
         #cellPaiChart{ height: 160px; }
+
+        /* Custom Modern Entrance Animation */
+        .fade-in-up {
+            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(15px);
+        }
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 
     @yield('head')
@@ -55,7 +69,7 @@
         @include('layout.partials.header')
 
         <div class="content">
-            <div class="animated fadeIn">
+            <div class="animated fade-in-up">
                 @yield('content')
             </div>
         </div>
@@ -67,6 +81,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jquery@2.2.4/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.4/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     {{-- Template JS --}}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.matchHeight/0.7.2/jquery.matchHeight-min.js"></script>
@@ -76,5 +91,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chartist@0.11.0/dist/chartist.min.js"></script>
 
     @stack('scripts')
+    @stack('modals')
 </body>
 </html>

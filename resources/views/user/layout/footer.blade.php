@@ -54,6 +54,37 @@
     </div>
 </footer>
 
+@php
+    $cartCountMobile = count(session('cart', []));
+@endphp
+
+<!-- BOTTOM NAVIGATION UNTUK MOBILE -->
+<nav class="mobile-bottom-nav">
+    <a href="{{ route('home') }}" class="nav-item-bottom {{ request()->routeIs('home') ? 'active' : '' }}">
+        <i class="fas fa-home"></i>
+        <span>Beranda</span>
+    </a>
+    <a href="{{ route('keranjang.index') }}" class="nav-item-bottom {{ request()->routeIs('keranjang.*') ? 'active' : '' }}" style="position:relative;">
+        <i class="fas fa-shopping-cart"></i>
+        <span>Keranjang</span>
+        @if($cartCountMobile > 0)
+            <span class="badge">{{ $cartCountMobile }}</span>
+        @endif
+    </a>
+    <a href="{{ route('request-barang.index') }}" class="nav-item-bottom {{ request()->routeIs('request-barang.*') ? 'active' : '' }}">
+        <i class="fas fa-hand-holding-heart"></i>
+        <span>Request</span>
+    </a>
+    <a href="#" class="nav-item-bottom {{ request()->routeIs('chat.*') ? 'active' : '' }}">
+        <i class="fas fa-comments"></i>
+        <span>Chat</span>
+    </a>
+    <a href="{{ Auth::check() ? '#' : route('login') }}" class="nav-item-bottom {{ request()->routeIs('user.profile.*') ? 'active' : '' }}">
+        <i class="fas fa-user"></i>
+        <span>Profil</span>
+    </a>
+</nav>
+
 {{-- FULL CSS --}}
 <style>
     /* Container Footer */

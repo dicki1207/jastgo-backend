@@ -78,7 +78,7 @@ hr {
     <div class="profile-avatar-container">
         @php
             $profileUrl = $jastiper->profile_toko 
-                ? asset('storage/' . $jastiper->profile_toko) 
+                ? $jastiper->profile_toko 
                 : 'https://placehold.co/150x150/f0f4f8/999999?text=TOKO';
         @endphp
         <img src="{{ $profileUrl }}" alt="Foto Profil Toko" class="profile-avatar">
@@ -100,6 +100,16 @@ hr {
     </div>
 
     <div class="profile-field">
+        <label>Kota Toko</label>
+        <div class="value">{{ $jastiper->kota_toko ?? '-' }}</div>
+    </div>
+
+    <div class="profile-field">
+        <label>Alamat Lengkap Toko</label>
+        <div class="value">{{ $jastiper->alamat_toko ?? '-' }}</div>
+    </div>
+
+    <div class="profile-field">
         <label>Jangkauan Layanan</label>
         <div class="value">{{ $jastiper->jangkauan ?? '-' }}</div>
     </div>
@@ -114,35 +124,7 @@ hr {
         <div class="value">{{ $jastiper->tanggal_daftar?->format('d M Y') ?? '-' }}</div>
     </div>
 
-    <hr>
 
-    <h4>Rekening Utama</h4>
-
-    @if($rekening)
-        <div class="profile-field">
-            <label>Tipe Rekening</label>
-            <div class="value">{{ ucfirst($rekening->tipe_rekening) ?? '-' }}</div>
-        </div>
-
-        <div class="profile-field">
-            <label>Nama Penyedia</label>
-            <div class="value">{{ $rekening->nama_penyedia ?? '-' }}</div>
-        </div>
-
-        <div class="profile-field">
-            <label>Nama Pemilik</label>
-            <div class="value">{{ $rekening->nama_pemilik ?? '-' }}</div>
-        </div>
-
-        <div class="profile-field">
-            <label>Nomor Akun</label>
-            <div class="value">{{ $rekening->nomor_akun ?? '-' }}</div>
-        </div>
-    @else
-        <div class="value-warning">
-            Belum ada rekening utama.
-        </div>
-    @endif
 
     <a href="{{ route('jastiper.profile.edit') }}" class="btn btn-primary mt-4">Edit Profil</a>
 

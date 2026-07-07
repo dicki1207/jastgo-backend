@@ -62,7 +62,7 @@ class PesananController extends Controller
             return response()->json(['error' => 'Pesanan tidak ditemukan atau akses tidak diizinkan.'], 404);
         }
         
-        $pesanan->load(['user','jastiper','detailPesanans.barang','pembayaran']); 
+        $pesanan->load(['user','jastiper','detailPesanans.barang','pembayarans']); 
         
         $data = [
             'id' => $pesanan->id,
@@ -73,6 +73,7 @@ class PesananController extends Controller
             'status_dana_jastiper' => $pesanan->status_dana_jastiper,
             'alamat_pengiriman' => $pesanan->alamat_pengiriman,
             'no_hp' => $pesanan->no_hp,
+            'catatan' => $pesanan->catatan,
             
             'detail_pesanans' => $pesanan->detailPesanans->map(function ($detail) {
                 return [
@@ -83,7 +84,7 @@ class PesananController extends Controller
                 ];
             }),
             
-            'pembayaran' => $pesanan->pembayaran->map(function ($pembayaran) {
+            'pembayaran' => $pesanan->pembayarans->map(function ($pembayaran) {
                 return [
                     'metode_pembayaran' => $pembayaran->metode_pembayaran,
                     'jumlah_bayar' => $pembayaran->jumlah_bayar,
@@ -97,12 +98,12 @@ class PesananController extends Controller
 
     public function edit(Pesanan $pesanan)
     {
-        $this->getJastiperId(); 
-        
-        $users = User::orderBy('name')->limit(200)->get();
-        $jastipers = Jastiper::orderBy('nama_toko')->limit(200)->get();
+        $jastiperId = $this->getJastiperId(); 
+        if ($pesanan->jastiper_id !== $jastiperId) {
+            abort(403, 'Akses ditolak: Ini bukan pesanan toko Anda (Celah IDOR berhasil dicegah!).');
+        }
 
-        return view('Jastiper.pesanan.edit', compact('pesanan','users','jastipers'));
+        return view('Jastiper.pesanan.edit', compact('pesanan'));
     }
 
     public function update(Request $request, Pesanan $pesanan)
@@ -112,17 +113,13 @@ class PesananController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk mengedit pesanan ini.');
         }
 
+        // SECURITY: Jastiper hanya boleh mengubah alamat & no_hp.
+        // Field sensitif (total_harga, status_pesanan, user_id, jastiper_id, tanggal_pesan)
+        // TIDAK boleh diubah melalui endpoint ini untuk mencegah fraud.
         $data = $request->validate([
-            'user_id' => 'nullable|exists:users,id',
-            'jastiper_id' => 'nullable|exists:jastipers,id',
-            'tanggal_pesan' => 'nullable|date',
-            'total_harga' => 'required|numeric|min:0',
-            'status_pesanan' => 'required|in:MENUNGGU,DIPROSES,SIAP_DIKIRIM,DIKIRIM,SELESAI,DIBATALKAN', 
             'alamat_pengiriman' => 'nullable|string',
-            'no_hp' => 'nullable|string|max:30',
+            'no_hp'            => 'nullable|string|max:30',
         ]);
-
-        if (empty($data['tanggal_pesan'])) unset($data['tanggal_pesan']);
 
         $pesanan->update($data);
 
@@ -164,6 +161,12 @@ public function updateStatusToSiapDikirim(Pesanan $pesanan)
         $jastiperId = $this->getJastiperId(); 
         if ($pesanan->jastiper_id !== $jastiperId) {
             abort(403, 'Anda tidak memiliki izin untuk menghapus pesanan ini.');
+        }
+
+        // SECURITY: Hanya pesanan yang belum diproses yang boleh dihapus.
+        if ($pesanan->status_pesanan !== 'MENUNGGU_PEMBAYARAN') {
+            return redirect()->route('jastiper.pesanan.index')
+                ->with('error', 'Pesanan yang sudah diproses tidak dapat dihapus.');
         }
 
         $pesanan->delete();

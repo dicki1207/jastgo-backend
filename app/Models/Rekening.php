@@ -17,6 +17,7 @@ class Rekening extends Model
         'nomor_akun',
         'status_aktif',
         'tanggal_input',
+        'bukti_kepemilikan',
     ];
 
     protected $casts = [

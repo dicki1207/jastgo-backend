@@ -51,6 +51,23 @@
             </div>
 
             <div class="mb-3">
+                <label class="form-label">Kota Toko</label>
+                <input type="text" name="kota_toko" class="form-control @error('kota_toko') is-invalid @enderror" 
+                        value="{{ old('kota_toko', $jastiper->kota_toko) }}">
+                @error('kota_toko')
+                    <small class="text-danger">{{ $message }}</small>
+                @enderror
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Alamat Lengkap Toko</label>
+                <textarea name="alamat_toko" rows="3" class="form-control @error('alamat_toko') is-invalid @enderror">{{ old('alamat_toko', $jastiper->alamat_toko) }}</textarea>
+                @error('alamat_toko')
+                    <small class="text-danger">{{ $message }}</small>
+                @enderror
+            </div>
+
+            <div class="mb-3">
                 <label class="form-label">Jangkauan Layanan</label>
                 <input type="text" name="jangkauan" class="form-control @error('jangkauan') is-invalid @enderror" 
                         value="{{ old('jangkauan', $jastiper->jangkauan) }}">
@@ -61,48 +78,14 @@
 
             <hr>
             <h5>Data Rekening</h5>
-
-            <div class="mb-3">
-                <label class="form-label">Tipe Rekening </label>
-                <select name="tipe_rekening" class="form-select @error('tipe_rekening') is-invalid @enderror">
-                    <option value="">-- Pilih Tipe --</option>
-                    <option value="bank" {{ old('tipe_rekening', $rekening->tipe_rekening ?? '') == 'bank' ? 'selected' : '' }}>Bank</option>
-                    <option value="e-wallet" {{ old('tipe_rekening', $rekening->tipe_rekening ?? '') == 'e-wallet' ? 'selected' : '' }}>E-Wallet</option>
-                </select>
-                @error('tipe_rekening')
-                    <small class="text-danger">{{ $message }}</small>
-                @enderror
+            <div class="alert alert-info">
+                Pengaturan Rekening Bank sekarang dipindahkan ke menu tersendiri agar Anda dapat mengelola lebih dari satu rekening.
+                <br>
+                <a href="{{ route('jastiper.rekening.index') }}" class="btn btn-sm btn-outline-primary mt-2">Kelola Rekening Bank</a>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label">Nama Penyedia (Bank/E-Wallet) <span class="text-danger">*</span></label>
-                <input type="text" name="nama_penyedia" class="form-control @error('nama_penyedia') is-invalid @enderror" 
-                        value="{{ old('nama_penyedia', $rekening->nama_penyedia ?? '') }}" required placeholder="Contoh: BCA / GoPay">
-                @error('nama_penyedia')
-                    <small class="text-danger">{{ $message }}</small>
-                @enderror
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Nama Pemilik Rekening <span class="text-danger">*</span></label>
-                <input type="text" name="nama_pemilik" class="form-control @error('nama_pemilik') is-invalid @enderror" 
-                        value="{{ old('nama_pemilik', $rekening->nama_pemilik ?? '') }}" required>
-                @error('nama_pemilik')
-                    <small class="text-danger">{{ $message }}</small>
-                @enderror
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Nomor Rekening/Akun <span class="text-danger">*</span></label>
-                <input type="number" name="nomor_akun" class="form-control @error('nomor_akun') is-invalid @enderror" 
-                        value="{{ old('nomor_akun', $rekening->nomor_akun ?? '') }}" required>
-                @error('nomor_akun')
-                    <small class="text-danger">{{ $message }}</small>
-                @enderror
-            </div>
-
-            <button class="btn btn-primary" type="submit">Simpan</button>
-            <a href="{{ route('jastiper.profile.index') }}" class="btn btn-secondary ms-2">Batal</a>
+            <button class="btn btn-primary mt-3" type="submit">Simpan Profil</button>
+            <a href="{{ route('jastiper.profile.index') }}" class="btn btn-secondary ms-2 mt-3">Batal</a>
         </form>
     </div>
 </div>

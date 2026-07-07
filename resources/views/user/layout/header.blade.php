@@ -7,6 +7,9 @@
     // Ambil notifikasi unread jika user login
     $notifications = $isLoggedIn ? auth()->user()->unreadNotifications : collect([]);
     $notifCount = $notifications->count();
+
+    // Hitung pesan chat belum dibaca
+    $unreadChatCount = $isLoggedIn ? \App\Models\Chat::where('receiver_id', auth()->id())->where('is_read', false)->count() : 0;
 @endphp
 
 <style>
@@ -179,6 +182,10 @@
                     <i class="fas fa-question-circle"></i>
                 </a>
 
+                <a href="{{ $isLoggedIn ? route('request-barang.index') : route('login') }}" class="icon-link" title="Request Barang">
+                    <i class="fas fa-hand-holding-heart"></i>
+                </a>
+
                 <a href="{{ $isLoggedIn ? route('keranjang.index') : route('login') }}" class="icon-link" title="Keranjang">
                     <i class="fas fa-shopping-cart"></i>
                     @if ($cartCount > 0)
@@ -187,6 +194,13 @@
                 </a>
 
                 @if ($isLoggedIn)
+                    <a href="{{ route('chat.index') }}" class="icon-link" title="Live Chat">
+                        <i class="fas fa-comment-dots"></i>
+                        @if ($unreadChatCount > 0)
+                            <span class="badge-count" style="background: #007bff;">{{ $unreadChatCount }}</span>
+                        @endif
+                    </a>
+
                     <div class="notif-wrapper" id="notifDropdown">
                         <div class="icon-link notif-toggle" title="Notifikasi">
                             <i class="fas fa-bell"></i>
@@ -251,18 +265,38 @@
                 @if ($isLoggedIn)
                     <div class="profile-dropdown" id="profileDropdown">
                         <div class="profile-dropdown-toggle">
-                            <i class="fas fa-user-circle profile-icon"></i>
+                            @if(auth()->check() && auth()->user()->avatar)
+                                <img src="{{ auth()->user()->avatar }}" alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 8px;">
+                            @else
+                                <i class="fas fa-user-circle profile-icon"></i>
+                            @endif
                             <span>{{ Str::limit($userName, 7, '..') }}</span>
                             <i class="fas fa-chevron-down" style="font-size: .8rem;"></i>
                         </div>
 
                         <div class="profile-dropdown-menu">
+                            <a href="{{ route('user.profile.index') }}">
+                                <i class="fas fa-user"></i> Profilku
+                            </a>
+                            <a href="{{ route('chat.index') }}">
+                                <i class="fas fa-comments"></i> Live Chat
+                            </a>
                             <a href="{{ route('pesanan.riwayat') }}">
                                 <i class="fas fa-receipt"></i> Pesanan Saya
                             </a>
-                            <a href="{{ route('jastiper.register.create') }}">
-                                <i class="fas fa-shop"></i> Daftar Jastiper
-                            </a>
+                            @if(auth()->check() && auth()->user()->role === 'admin')
+                                <a href="{{ route('admin.dashboard.index') }}">
+                                    <i class="fas fa-columns"></i> Dashboard Admin
+                                </a>
+                            @elseif(auth()->check() && auth()->user()->role === 'jastiper')
+                                <a href="{{ route('jastiper.dashboard.index') }}">
+                                    <i class="fas fa-store"></i> Dashboard Jastiper
+                                </a>
+                            @else
+                                <a href="{{ route('jastiper.register.create') }}">
+                                    <i class="fas fa-shop"></i> Daftar Jastiper
+                                </a>
+                            @endif
                             <form action="{{ route('logout') }}" method="POST" style="margin:0;">
                                 @csrf
                                 <button type="submit">
@@ -306,7 +340,8 @@
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': csrfToken,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             }
         })
         .then(response => {
@@ -339,7 +374,8 @@
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': csrfToken,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             }
         })
         .then(response => response.json())

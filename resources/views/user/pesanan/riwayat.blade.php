@@ -10,7 +10,9 @@
         'DIPROSES' => 'status-diproses',
         'SIAP_DIKIRIM' => 'status-dikirim',
         'SELESAI' => 'status-selesai',
-        'DIBATALKAN' => 'status-batal', // CSS sudah ada di bawah (background: red)
+        'DIBATALKAN' => 'status-batal',
+        'KOMPLAIN' => 'status-komplain',
+        'DIBATALKAN_REFUND' => 'status-batal',
     ];
     
     // FUNGSI UNTUK MENYEDERHANAKAN TAMPILAN STATUS
@@ -22,6 +24,8 @@
             'DIBATALKAN' => 'DIBATALKAN',
             'DIPROSES' => 'DIPROSES',
             'SELESAI' => 'SELESAI',
+            'KOMPLAIN' => 'KOMPLAIN (SENGKETA)',
+            'DIBATALKAN_REFUND' => 'DIBATALKAN (REFUND)',
         ];
         return $map[$status] ?? str_replace('_', ' ', $status);
     };
@@ -193,6 +197,10 @@
             background: red;
         }
 
+        .status-komplain {
+            background: #ff8c00;
+        }
+
         .item-list {
             list-style: none;
             padding: 0;
@@ -239,6 +247,11 @@
             display: inline-flex;
             align-items: center;
             gap: 0.3rem;
+        }
+        
+        .btn-komplain {
+            background: #dc3545;
+            color: white !important;
         }
         
         .btn-complete {
@@ -370,6 +383,9 @@
             <form action="{{ route('pesanan.riwayat') }}" method="GET" class="search-input-group">
                 <input type="text" name="q" placeholder="Cari ID, HP, atau Alamat..."
                     value="{{ $q ?? '' }}">
+                @if(request('status'))
+                    <input type="hidden" name="status" value="{{ request('status') }}">
+                @endif
                 <button type="submit">
                     <i class="fas fa-search"></i> Cari
                 </button>
@@ -377,24 +393,24 @@
 
             {{-- Filter Status --}}
             <nav class="status-filter-nav">
-                <a href="{{ route('pesanan.riwayat', ['status' => 'MENUNGGU_PEMBAYARAN']) }}"
+                <a href="{{ route('pesanan.riwayat', array_merge(request()->query(), ['status' => 'MENUNGGU_PEMBAYARAN', 'page' => 1])) }}"
                     class="{{ $status == 'MENUNGGU_PEMBAYARAN' ? 'active' : '' }}">Bayar</a>
                 
-                <a href="{{ route('pesanan.riwayat', ['status' => 'DIPROSES']) }}"
+                <a href="{{ route('pesanan.riwayat', array_merge(request()->query(), ['status' => 'DIPROSES', 'page' => 1])) }}"
                     class="{{ $status == 'DIPROSES' ? 'active' : '' }}">Diproses</a>
                 
-                <a href="{{ route('pesanan.riwayat', ['status' => 'SIAP_DIKIRIM']) }}"
+                <a href="{{ route('pesanan.riwayat', array_merge(request()->query(), ['status' => 'SIAP_DIKIRIM', 'page' => 1])) }}"
                     class="{{ $status == 'SIAP_DIKIRIM' ? 'active' : '' }}">Dikirim</a>
                 
-                <a href="{{ route('pesanan.riwayat', ['status' => 'SELESAI']) }}"
+                <a href="{{ route('pesanan.riwayat', array_merge(request()->query(), ['status' => 'SELESAI', 'page' => 1])) }}"
                     class="{{ $status == 'SELESAI' ? 'active' : '' }}">Selesai</a>
 
                 {{-- === TOMBOL DIBATALKAN (DITAMBAHKAN) === --}}
-                <a href="{{ route('pesanan.riwayat', ['status' => 'DIBATALKAN']) }}"
+                <a href="{{ route('pesanan.riwayat', array_merge(request()->query(), ['status' => 'DIBATALKAN', 'page' => 1])) }}"
                     class="{{ $status == 'DIBATALKAN' ? 'active' : '' }}">Dibatalkan</a>
                 {{-- ========================================= --}}
 
-                <a href="{{ route('pesanan.riwayat') }}"
+                <a href="{{ route('pesanan.riwayat', array_merge(request()->except('status'), ['page' => 1])) }}"
                     class="{{ !$status || $status == 'Semua Aktif' ? 'active' : '' }}">Semua</a>
             </nav>
         </div>
@@ -442,13 +458,12 @@
                             </a>
 
                         @elseif ($pesanan->status_pesanan == 'SIAP_DIKIRIM')
-                            <form action="{{ route('pesanan.complete', $pesanan->id) }}" method="POST" style="display:inline-block;">
-                                @csrf
-                                @method('PUT')
-                                <button type="submit" class="btn-detail btn-complete" onclick="return confirm('Apakah Anda yakin pesanan sudah diterima?')">
-                                    <i class="fas fa-check"></i> Pesanan Diterima
-                                </button>
-                            </form>
+                            <a href="javascript:void(0)" class="btn-detail btn-komplain" onclick="document.getElementById('komplain-form-{{ $pesanan->id }}').style.display='block'; document.getElementById('review-form-{{ $pesanan->id }}').style.display='none';">
+                                <i class="fas fa-exclamation-triangle"></i> Ajukan Komplain
+                            </a>
+                            <a href="javascript:void(0)" class="btn-detail btn-complete" onclick="document.getElementById('review-form-{{ $pesanan->id }}').style.display='block'; document.getElementById('komplain-form-{{ $pesanan->id }}').style.display='none';">
+                                <i class="fas fa-check"></i> Pesanan Diterima & Ulas
+                            </a>
 
                         @elseif ($pesanan->status_pesanan == 'SELESAI' && !$pesanan->has_reviewed)
                             <a href="#" class="btn-detail" onclick="document.getElementById('review-form-{{ $pesanan->id }}').style.display='block'; this.style.display='none';" style="background:#00A388; color:white;">
@@ -473,13 +488,18 @@
                 </div>
                 
                 {{-- FORM ULASAN --}}
-                @if ($pesanan->status_pesanan == 'SELESAI' && !$pesanan->has_reviewed)
+                @if (($pesanan->status_pesanan == 'SELESAI' && !$pesanan->has_reviewed) || $pesanan->status_pesanan == 'SIAP_DIKIRIM')
                     <div id="review-form-{{ $pesanan->id }}" class="rating-form" style="display: none;">
-                        <h4 style="margin-top: 0; color: #006FFF;">Beri Ulasan Anda</h4>
+                        <h4 style="margin-top: 0; color: #006FFF;">
+                            {{ $pesanan->status_pesanan == 'SIAP_DIKIRIM' ? 'Konfirmasi Pesanan Diterima & Beri Ulasan' : 'Beri Ulasan Anda' }}
+                        </h4>
                         <p style="font-size: 0.9rem;">Untuk **{{ $pesanan->jastiper->nama_toko ?? 'Admin' }}**</p>
 
-                        <form action="{{ route('ulasan.store', $pesanan->id) }}" method="POST">
+                        <form action="{{ $pesanan->status_pesanan == 'SIAP_DIKIRIM' ? route('pesanan.complete', $pesanan->id) : route('ulasan.store', $pesanan->id) }}" method="POST" enctype="multipart/form-data">
                             @csrf
+                            @if($pesanan->status_pesanan == 'SIAP_DIKIRIM')
+                                @method('PUT')
+                            @endif
                             
                             <div class="rating-stars">
                                 <input type="radio" id="star5-{{ $pesanan->id }}" name="rating" value="5" required>
@@ -499,7 +519,35 @@
                             </div>
 
                             <textarea name="komentar" rows="3" placeholder="Tulis komentar/pengalaman Anda (Opsional)"></textarea>
-                            <button type="submit"><i class="fas fa-paper-plane"></i> Kirim Ulasan</button>
+                            <input type="file" name="foto_ulasan" accept="image/*" style="margin-top: 10px; width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                            <small style="color: #888; display: block; margin-top: 5px;">Opsional: Lampirkan foto (Max: 2MB)</small>
+                            <button type="submit">
+                                <i class="fas {{ $pesanan->status_pesanan == 'SIAP_DIKIRIM' ? 'fa-check-circle' : 'fa-paper-plane' }}"></i> 
+                                {{ $pesanan->status_pesanan == 'SIAP_DIKIRIM' ? 'Terima & Kirim Ulasan' : 'Kirim Ulasan' }}
+                            </button>
+                        </form>
+                    </div>
+                @endif
+                
+                {{-- FORM KOMPLAIN --}}
+                @if ($pesanan->status_pesanan == 'SIAP_DIKIRIM')
+                    <div id="komplain-form-{{ $pesanan->id }}" class="rating-form" style="display: none; border-top: 3px solid #dc3545;">
+                        <h4 style="margin-top: 0; color: #dc3545;">
+                            <i class="fas fa-exclamation-triangle"></i> Ajukan Komplain Pesanan
+                        </h4>
+                        <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">Jika barang yang Anda terima rusak, kurang, atau salah kirim, silakan ajukan komplain. Uang Anda akan ditahan sementara kami meninjau masalah ini.</p>
+
+                        <form action="{{ route('pesanan.komplain', $pesanan->id) }}" method="POST" enctype="multipart/form-data">
+                            @csrf
+                            
+                            <textarea name="alasan" rows="3" placeholder="Jelaskan alasan komplain secara detail (Wajib)" required></textarea>
+                            <div style="margin-top: 10px;">
+                                <label style="font-size: 0.9rem; font-weight: bold; color: #333;">Upload Bukti Foto Barang Cacat/Salah (Wajib) <span style="color:red">*</span></label>
+                                <input type="file" name="bukti_foto" accept="image/*" style="margin-top: 5px; width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;" required>
+                            </div>
+                            <button type="submit" style="background: #dc3545; margin-top: 15px;">
+                                <i class="fas fa-paper-plane"></i> Kirim Komplain
+                            </button>
                         </form>
                     </div>
                 @endif

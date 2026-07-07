@@ -13,77 +13,76 @@
                     </a>
                 </li>
 
-                <li class="{{ request()->is('admin/pengguna*') ? 'active' : '' }}">
-                    <a href="{{ route('admin.pengguna.index') }}">
-                        <img src="{{ asset('admin/assets/images/icons/data-master.svg') }}"
-                            style="width:20px;margin-right:12px" alt="Data Pengguna">
-                        Data Pengguna
+                {{-- MASTER DATA DROPDOWN --}}
+                @php
+                    $isMasterDataActive = request()->is('admin/pengguna*') || request()->is('admin/jastiper*') || request()->is('admin/kategori*') || request()->is('admin/rekening*');
+                @endphp
+                <li class="menu-item-has-children dropdown {{ $isMasterDataActive ? 'active show' : '' }}">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="{{ $isMasterDataActive ? 'true' : 'false' }}">
+                        <img src="{{ asset('admin/assets/images/icons/data-master.svg') }}" style="width:20px;margin-right:12px" alt="Master Data">
+                        Master Data
                     </a>
+                    <ul class="sub-menu children dropdown-menu {{ $isMasterDataActive ? 'show' : '' }}">
+                        <li class="{{ request()->is('admin/pengguna*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.pengguna.index') }}">Data Pengguna</a>
+                        </li>
+                        <li class="{{ request()->is('admin/jastiper*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.jastiper.index') }}">Data Jastiper</a>
+                        </li>
+                        <li class="{{ request()->is('admin/kategori*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.kategori.index') }}">Kategori Barang</a>
+                        </li>
+                        <li class="{{ request()->is('admin/rekening*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.rekening.index') }}">Data Rekening</a>
+                        </li>
+                    </ul>
                 </li>
 
-                <li class="{{ request()->is('admin/jastiper*') ? 'active' : '' }}">
-                    <a href="{{ route('admin.jastiper.index') }}">
-                        <img src="{{ asset('admin/assets/images/icons/data-master.svg') }}"
-                            style="width:20px;margin-right:12px" alt="Data Jastiper">
-                        Data Jastiper
+                {{-- TRANSAKSI & AKTIVITAS DROPDOWN --}}
+                @php
+                    $isTransaksiActive = request()->is('admin/konfirmasi-pembayaran*') || request()->is('admin/pelepasan-dana*') || request()->is('admin/log-aktivitas*') || request()->is('admin/penarikan-dana*') || request()->is('admin/komplain*') || request()->is('admin/refund*');
+                @endphp
+                <li class="menu-item-has-children dropdown {{ $isTransaksiActive ? 'active show' : '' }}">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="{{ $isTransaksiActive ? 'true' : 'false' }}">
+                        <img src="{{ asset('admin/assets/images/icons/kelola-dana.svg') }}" style="width:20px;margin-right:12px" alt="Transaksi">
+                        Transaksi & Aktivitas
                     </a>
+                    <ul class="sub-menu children dropdown-menu {{ $isTransaksiActive ? 'show' : '' }}">
+                        <li class="{{ request()->is('admin/komplain*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.komplain.index') }}">Kelola Komplain</a>
+                        </li>
+                        <li class="{{ request()->is('admin/penarikan-dana*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.penarikan-dana.index') }}">Penarikan Dana</a>
+                        </li>
+                        <li class="{{ request()->is('admin/refund*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.refund.index') }}">Pengembalian Dana</a>
+                        </li>
+                        <li class="{{ request()->is('admin/log-aktivitas*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.log-aktivitas.index') }}">Log Aktivitas</a>
+                        </li>
+                    </ul>
                 </li>
 
-                <li class="{{ request()->is('admin/kategori*') ? 'active' : '' }}">
-                    <a href="{{ route('admin.kategori.index') }}">
-                        <img src="{{ asset('admin/assets/images/icons/barang.svg') }}"
-                            style="width:20px;margin-right:12px" alt="Kategori Barang">
-                        Kategori Barang
+                {{-- LAPORAN & ULASAN DROPDOWN --}}
+                @php
+                    $isLaporanActive = request()->is('admin/ulasans*') || request()->is('admin/laporan') || request()->is('admin/laporan/*') || request()->is('admin/laporan-keuntungan*');
+                @endphp
+                <li class="menu-item-has-children dropdown {{ $isLaporanActive ? 'active show' : '' }}">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="{{ $isLaporanActive ? 'true' : 'false' }}">
+                        <img src="{{ asset('admin/assets/images/icons/ulasan.svg') }}" style="width:20px;margin-right:12px" alt="Laporan">
+                        Laporan & Ulasan
                     </a>
-                </li>
-                
-                {{-- REKENING BARU DITAMBAHKAN --}}
-                <li class="{{ request()->is('admin/rekening*') ? 'active' : '' }}">
-                    <a href="{{ route('admin.rekening.index') }}">
-                        <img src="{{ asset('admin/assets/images/icons/data-master.svg') }}"
-                            style="width:20px;margin-right:12px" alt="Data Rekening">
-                        Data Rekening
-                    </a>
-                </li>
-
-                <li class="{{ request()->is('admin/konfirmasi-pembayaran*') || request()->is('admin/pelepasan-dana*') ? 'active' : '' }}">
-                    <a href="{{ route('admin.konfirmasi-pembayaran.index') }}">
-                        <img src="{{ asset('admin/assets/images/icons/kelola-dana.svg') }}"
-                            style="width:20px;margin-right:12px" alt="Kelola Dana">
-                        Konfirmasi & Pelepasan Dana
-                    </a>
-                </li>
-
-                <li class="{{ request()->is('admin/log-aktivitas*') ? 'active' : '' }}">
-                    <a href="{{ route('admin.log-aktivitas.index') }}">
-                        <img src="{{ asset('admin/assets/images/icons/tarnsaksi.svg') }}"
-                            style="width:20px;margin-right:12px" alt="Log Aktivitas">
-                        Log Aktivitas
-                    </a>
-                </li>
-
-                <li class="{{ request()->is('admin/ulasans*') ? 'active' : '' }}">
-                    <a href="{{ route('admin.ulasans.index') }}">
-                        <img src="{{ asset('admin/assets/images/icons/ulasan.svg') }}"
-                            style="width:20px;margin-right:12px" alt="Ulasan">
-                        Ulasan
-                    </a>
-                </li>
-
-                <li class="{{ request()->is('admin/laporan.keuntungan') ? 'active' : '' }}">
-                    <a href="{{ route('admin.laporan.keuntungan') }}" aria-label="Laporan Keuntungan">
-                        <img src="{{ asset('admin/assets/images/icons/validasi-produk.svg') }}"
-                            style="width:20px;margin-right:12px" alt="Icon Validasi Produk">
-                        Laporan Keuntungan
-                    </a>
-                </li>
-                {{-- Notifikasi - Admin --}}
-                <li class="{{ request()->is('admin/notifikasi*') ? 'active' : '' }}">
-                    <a href="{{ route('admin.notifikasi.index') }}">
-                        <img src="{{ asset('admin/assets/images/icons/notification.svg') }}" alt="Notifikasi"
-                            style="width:20px;margin-right:12px">
-                        Notifikasi
-                    </a>
+                    <ul class="sub-menu children dropdown-menu {{ $isLaporanActive ? 'show' : '' }}">
+                        <li class="{{ request()->is('admin/ulasans*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.ulasans.index') }}">Ulasan Aplikasi</a>
+                        </li>
+                        <li class="{{ request()->is('admin/laporan') || request()->is('admin/laporan/*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.laporan.index') }}">Laporan Pengguna</a>
+                        </li>
+                        <li class="{{ request()->is('admin/laporan-keuntungan*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.laporan.keuntungan') }}">Laporan Keuntungan</a>
+                        </li>
+                    </ul>
                 </li>
 
                 {{-- <li class="{{ request()->is('admin/bantuan*') ? 'active' : '' }}">

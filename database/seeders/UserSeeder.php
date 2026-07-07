@@ -28,8 +28,25 @@ class UserSeeder extends Seeder
             'no_hp'          => '081234567890',
             'alamat'         => 'Jl. Admin No. 1',
             'role'           => 'admin',
+            'email_verified_at' => now(),
             'tanggal_daftar' => now(),
         ]);
+        User::create([
+            'name'           => 'Admin User Gmail',
+            'nama_lengkap'   => 'Administrator Gmail',
+            'username'       => 'admin_gmail',
+            'email'          => 'admin@gmail.com',
+            'password'       => Hash::make('password123'), // hashed password
+            'no_hp'          => '081234567890',
+            'alamat'         => 'Jl. Admin No. 1',
+            'role'           => 'admin',
+            'email_verified_at' => now(),
+            'tanggal_daftar' => now(),
+        ]);
+
+        // ----------------------
+        // User Biasa
+        // ----------------------
         User::create([
             'name'           => 'User',
             'nama_lengkap'   => 'User Biasa',
@@ -39,6 +56,19 @@ class UserSeeder extends Seeder
             'no_hp'          => '081234567890',
             'alamat'         => 'Jl. User No. 1',
             'role'           => 'pengguna',
+            'email_verified_at' => now(),
+            'tanggal_daftar' => now(),
+        ]);
+        User::create([
+            'name'           => 'User Gmail',
+            'nama_lengkap'   => 'User Biasa Gmail',
+            'username'       => 'User02',
+            'email'          => 'user@gmail.com',
+            'password'       => Hash::make('password123'), // hashed password
+            'no_hp'          => '081234567890',
+            'alamat'         => 'Jl. User No. 1',
+            'role'           => 'pengguna',
+            'email_verified_at' => now(),
             'tanggal_daftar' => now(),
         ]);
 
@@ -54,6 +84,7 @@ class UserSeeder extends Seeder
             'no_hp'          => '081298765432',
             'alamat'         => 'Jl. Jastiper No. 2',
             'role'           => 'jastiper',
+            'email_verified_at' => now(),
             'tanggal_daftar' => now(),
         ]);
 
@@ -65,7 +96,29 @@ class UserSeeder extends Seeder
             'rating' => 4.5,
             'tanggal_daftar' => now(),
             'rekening_id' => null,
+        ]);
 
+        $jastiperUserGmail = User::create([
+            'name'           => 'Jastiper User Gmail',
+            'nama_lengkap'   => 'Jasa Titip User Gmail',
+            'username'       => 'jastiper_gmail',
+            'email'          => 'jastiper@gmail.com',
+            'password'       => Hash::make('jastiper123'), 
+            'no_hp'          => '081298765432',
+            'alamat'         => 'Jl. Jastiper No. 2',
+            'role'           => 'jastiper',
+            'email_verified_at' => now(),
+            'tanggal_daftar' => now(),
+        ]);
+
+        Jastiper::create([
+            'user_id' => $jastiperUserGmail->id,
+            'nama_toko' => 'Toko Jastiper Gmail',
+            'no_hp' => '081298765432',
+            'jangkauan' => 'Seluruh Indonesia',
+            'rating' => 4.5,
+            'tanggal_daftar' => now(),
+            'rekening_id' => null,
         ]);
     }
 

@@ -21,13 +21,10 @@ class PembayaranAdminController extends Controller
     {
         $search = $request->query('search');
 
-        $query = Pesanan::where(function ($q_base) {
-            $q_base->whereIn('status_pesanan', ['MENUNGGU_KONFIRMASI_ADMIN', 'DIBATALKAN'])
-                ->orWhere(function ($q_pelepasan) {
-                    $q_pelepasan->where('status_pesanan', 'SELESAI')
-                                ->where('status_dana_jastiper', '!=', 'DILEPASKAN');
-                });
-        })->with(['pembayaranUser', 'user', 'jastiper', 'detailPesanans']); // <-- DIUBAH: detailPesanans (sesuai Model)
+        // Menampilkan semua pesanan yang dananya sedang ditahan di sistem (TERTAHAN)
+        // Admin hanya bisa melepaskan dana jika status_pesanan == 'SELESAI' (di-handle di View)
+        $query = Pesanan::where('status_dana_jastiper', 'TERTAHAN')
+                        ->with(['pembayaranUser', 'user', 'jastiper', 'detailPesanans']);
 
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -46,7 +43,12 @@ class PembayaranAdminController extends Controller
                           ->paginate(10)
                           ->appends(['search' => $search]);
 
-        return view('admin.konfirmasi-dana.index', compact('pesanans', 'search'));
+        // Fetch admin's active bank accounts to be used for the manual transfer dropdown
+        $adminRekenings = \App\Models\Rekening::where('user_id', Auth::id())
+                                              ->where('status_aktif', 'aktif')
+                                              ->get();
+
+        return view('admin.konfirmasi-dana.index', compact('pesanans', 'search', 'adminRekenings'));
     }
 
     /**
@@ -71,25 +73,9 @@ class PembayaranAdminController extends Controller
             }
 
             /**
-             * 🔽 KURANGI STOK BARANG
+             * STOK SUDAH DIKURANGI DI CHECKOUT
+             * Dihapus agar tidak double deduction
              */
-            // <-- DIUBAH: Menggunakan detailPesanans (sesuai Model)
-            foreach ($pesanan->detailPesanans as $detail) { 
-                $barang = Barang::lockForUpdate()->find($detail->barang_id);
-
-                if (!$barang) {
-                    throw new \Exception('Barang tidak ditemukan.');
-                }
-
-                if ($barang->stok < $detail->jumlah) {
-                    throw new \Exception(
-                        'Stok barang "' . $barang->nama_barang . '" tidak mencukupi.'
-                    );
-                }
-
-                $barang->stok -= $detail->jumlah;
-                $barang->save();
-            }
 
             /**
              * UPDATE PEMBAYARAN
@@ -115,7 +101,7 @@ class PembayaranAdminController extends Controller
 
             return back()->with(
                 'success',
-                'Pembayaran berhasil dikonfirmasi dan stok barang telah dikurangi.'
+                'Pembayaran berhasil dikonfirmasi.'
             );
 
         } catch (\Exception $e) {
@@ -153,6 +139,15 @@ class PembayaranAdminController extends Controller
                 'status_pesanan' => 'DIBATALKAN',
             ]);
 
+            // Kembalikan Stok Barang!
+            foreach ($pesanan->detailPesanans as $detail) { 
+                $barang = Barang::lockForUpdate()->find($detail->barang_id);
+                if ($barang) {
+                    $barang->stok += $detail->jumlah;
+                    $barang->save();
+                }
+            }
+
             DB::commit();
 
             $pesanan->user->notify(new PembayaranDitolak($pesanan));
@@ -172,53 +167,86 @@ class PembayaranAdminController extends Controller
      */
     public function lepasDanaKeJastiper(Request $request, Pesanan $pesanan)
     {
-        if ($pesanan->status_pesanan !== 'SELESAI' || $pesanan->status_dana_jastiper === 'DILEPASKAN') {
-            return back()->with('error', 'Dana belum siap dilepas.');
-        }
-
-        $request->validate([
-            'bukti_tf_admin' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-        ]);
-
-        $path = null;
-
         try {
             DB::beginTransaction();
 
-            $biayaAdmin   = $pesanan->total_harga * 0.05;
-            $jumlahBersih = $pesanan->total_harga - $biayaAdmin;
+            // KUNCI BARIS INI (Pencegahan Race Condition)
+            $lockedPesanan = Pesanan::lockForUpdate()->find($pesanan->id);
 
-            $path = $request->file('bukti_tf_admin')
-                            ->store('bukti_transfer/admin', 'public');
+            if ($lockedPesanan->status_pesanan !== 'SELESAI' || $lockedPesanan->status_dana_jastiper !== 'TERTAHAN') {
+                DB::rollBack();
+                return back()->with('error', 'Dana tidak valid untuk diteruskan (mungkin sudah diteruskan atau belum selesai).');
+            }
+
+            $biayaAdmin   = $lockedPesanan->total_harga * 0.05;
+            $jumlahBersih = $lockedPesanan->total_harga - $biayaAdmin;
 
             AlurDana::create([
-                'pesanan_id'        => $pesanan->id,
-                'jenis_transaksi'   => 'PELEPASAN_DANA',
+                'pesanan_id'        => $lockedPesanan->id,
+                'jenis_transaksi'   => 'PELEPASAN_DANA', // Logika lama tetap dipakai untuk history pendapatan
                 'jumlah_dana'       => $jumlahBersih,
-                'bukti_tf_path'     => $path,
+                'bukti_tf_path'     => 'Masuk Dompet (Sistem)',
                 'status_konfirmasi' => 'DIKONFIRMASI',
                 'konfirmator_id'    => Auth::id(),
                 'tanggal_transfer'  => now(),
                 'biaya_admin'       => $biayaAdmin,
             ]);
 
-            $pesanan->update([
-                'status_dana_jastiper' => 'DILEPASKAN',
+            // Ubah status dana menjadi TERSEDIA_DI_DOMPET
+            $lockedPesanan->update([
+                'status_dana_jastiper' => 'TERSEDIA_DI_DOMPET',
             ]);
 
             DB::commit();
 
-            $pesanan->jastiper->notify(
-                new DanaDilepaskan($pesanan, $jumlahBersih, $biayaAdmin)
+            // Opsional: Kirim notifikasi dana sudah masuk dompet
+            $lockedPesanan->jastiper->notify(
+                new DanaDilepaskan($lockedPesanan, $jumlahBersih, $biayaAdmin)
             );
 
-            return back()->with('success', 'Dana berhasil dilepas ke Jastiper.');
+            return back()->with('success', 'Dana berhasil dilepaskan ke dompet Jastiper.');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            if ($path) {
-                Storage::disk('public')->delete($path);
-            }
+            return back()->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ================================
+     * TOLAK REKENING JASTIPER (MANUAL)
+     * ================================
+     */
+    public function tolakRekeningJastiper(Request $request, Pesanan $pesanan)
+    {
+        if ($pesanan->status_pesanan !== 'SELESAI' || $pesanan->status_dana_jastiper === 'DILEPASKAN') {
+            return back()->with('error', 'Status pesanan tidak valid.');
+        }
+
+        $request->validate([
+            'catatan_admin' => 'required|string|max:255'
+        ], [
+            'catatan_admin.required' => 'Catatan/alasan penolakan rekening wajib diisi.'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Kita biarkan status dana tetap TERTAHAN, tapi kita kirim notifikasi
+            // ATAU bisa juga kita ubah status_dana_jastiper ke 'REKENING_INVALID'
+            // Untuk amannya, biarkan TERTAHAN dan kirim notifikasi saja.
+
+            DB::commit();
+
+            // Kirim notifikasi ke Jastiper
+            $pesanan->jastiper->notify(
+                new \App\Notifications\RekeningJastiperSalah($pesanan, $request->catatan_admin)
+            );
+
+            return back()->with('success', 'Berhasil melaporkan rekening salah. Notifikasi telah dikirim ke Jastiper.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
             return back()->with('error', $e->getMessage());
         }
     }

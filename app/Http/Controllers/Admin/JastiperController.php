@@ -12,8 +12,21 @@ class JastiperController extends Controller
 {
     public function index(Request $request)
     {
-        $jastipers = Jastiper::with(['user', 'rekening'])->orderBy('id', 'desc')->paginate(15);
-        return view('admin.jastiper.index', compact('jastipers'));
+        $q = $request->query('q');
+        
+        $query = Jastiper::with(['user', 'rekening'])->orderBy('id', 'desc');
+        
+        if ($q) {
+            $query->where(function($w) use ($q) {
+                $w->where('id', $q)
+                  ->orWhere('nama_toko', 'like', "%{$q}%")
+                  ->orWhereHas('user', fn($u) => $u->where('username', 'like', "%{$q}%")->orWhere('name', 'like', "%{$q}%"));
+            });
+        }
+        
+        $jastipers = $query->paginate(15)->withQueryString();
+        
+        return view('admin.jastiper.index', compact('jastipers', 'q'));
     }
 
     public function create()
@@ -71,6 +84,27 @@ class JastiperController extends Controller
     {
         $jastiper->delete();
         return redirect()->route('admin.jastiper.index')->with('success', 'Jastiper berhasil dihapus.');
+    }
+
+    public function ban(Jastiper $jastiper)
+    {
+        if ($jastiper->user) {
+            $jastiper->user->is_banned = !$jastiper->user->is_banned;
+            $jastiper->user->save();
+            
+            // Apabila dibanned, revoke token dan batalkan pesanan aktif
+            if ($jastiper->user->is_banned) {
+                $jastiper->user->fcm_token = null;
+                $jastiper->user->save();
+                if (method_exists($jastiper->user, 'tokens')) {
+                    $jastiper->user->tokens()->delete();
+                }
+            }
+
+            $status = $jastiper->user->is_banned ? 'dibekukan' : 'diaktifkan kembali';
+            return back()->with('success', "Akun jastiper berhasil $status.");
+        }
+        return back()->with('error', "User jastiper tidak ditemukan.");
     }
 
     public function show(Jastiper $jastiper)

@@ -15,6 +15,7 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        \Illuminate\Support\Facades\Log::info("DASHBOARD HIT");
         $lastTwelveMonths = Carbon::now()->subMonths(11)->startOfMonth();
         
         
@@ -46,7 +47,7 @@ class DashboardController extends Controller
                                      )
                                      ->groupBy('tahun', 'bulan')
                                      ->orderBy('tahun', 'asc')
-                                     ->orderBy('bulan', 'asc')
+                                     ->orderBy('bulan', 'asc') 
                                      ->get()
                                      ->keyBy(function ($item) {
                                          return $item->tahun . '-' . $item->bulan;
@@ -72,16 +73,28 @@ class DashboardController extends Controller
         ];
 
         $danaTertahanCount = Pesanan::where('status_pesanan', 'SELESAI')
-                                    ->where('status_dana_jastiper', 'TERTAHAN')
+                                    ->whereIn('status_dana_jastiper', ['TERTAHAN', 'TERSEDIA_DI_DOMPET', 'MENUNGGU_PELEPASAN'])
                                     ->count();
         $danaDilepas = Pesanan::where('status_pesanan', 'SELESAI')
                                ->where('status_dana_jastiper', 'DILEPASKAN')
                                ->count();
 
         $danaChartData = [
-            'TERTAHAN' => $danaTertahanCount,
-            'DILEPAS'  => $danaDilepas,
+            'BELUM DITARIK' => $danaTertahanCount,
+            'SUDAH DITARIK'  => $danaDilepas,
         ];
+        
+        $danaDitahanPerJastiper = Pesanan::whereIn('status_dana_jastiper', ['TERTAHAN', 'TERSEDIA_DI_DOMPET', 'MENUNGGU_PELEPASAN'])
+                                         ->whereIn('status_pesanan', ['DIPROSES', 'SIAP_DIKIRIM', 'SELESAI'])
+                                         ->select('jastiper_id', DB::raw('SUM(total_harga) as total_ditahan'))
+                                         ->groupBy('jastiper_id')
+                                         ->with('jastiper.user')
+                                         ->get();
+                                         
+        // Modify existing $danaDitahan to sum across the same statuses
+        $danaDitahan = Pesanan::whereIn('status_dana_jastiper', ['TERTAHAN', 'TERSEDIA_DI_DOMPET', 'MENUNGGU_PELEPASAN'])
+                              ->whereIn('status_pesanan', ['DIPROSES', 'SIAP_DIKIRIM', 'SELESAI'])
+                              ->sum('total_harga');
         
         $userRaw = User::where('created_at', '>=', $lastTwelveMonths)
                         ->select(
@@ -136,7 +149,8 @@ class DashboardController extends Controller
             'konfirmasiChartData',
             'danaChartData',
             'dataPelanggan',
-            'dataJastiper'
+            'dataJastiper',
+            'danaDitahanPerJastiper'
         ));
     }
 }

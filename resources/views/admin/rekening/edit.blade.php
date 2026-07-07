@@ -31,22 +31,20 @@
             <input type="text" value="{{ $rekening->user_id }}" class="form-control" disabled>
         </div>
         
-        {{-- Field: tipe_rekening (Enum/Select) --}}
-        <div class="form-group">
-            <label class="form-label">Tipe Rekening <span class="text-danger">*</span></label>
-            <select name="tipe_rekening" class="form-control" required>
-                @php $oldTipe = old('tipe_rekening', $rekening->tipe_rekening); @endphp
-                <option value="bank" {{ $oldTipe == 'bank' ? 'selected' : '' }}>Bank</option>
-                <option value="e-wallet" {{ $oldTipe == 'e-wallet' ? 'selected' : '' }}>E-Wallet</option>
-            </select>
-            @error('tipe_rekening') <div class="text-danger">{{ $message }}</div> @enderror
+        <div class="alert alert-info mb-4" style="margin-bottom:18px; padding:10px 14px; border-radius:8px; background:#e8f4fd; border:1px solid #b8daff; color:#004085;">
+            <i class="fas fa-info-circle"></i> <strong>Catatan Keamanan:</strong> Demi menjaga integritas data historis, Tipe Rekening, Nama Bank/E-Wallet, dan Nomor Akun tidak dapat diubah. Jika ada kesalahan, silakan nonaktifkan rekening ini dan buat yang baru.
         </div>
 
-        {{-- Field: nama_penyedia --}}
+        {{-- Field: tipe_rekening (Disabled) --}}
         <div class="form-group">
-            <label class="form-label">Nama Penyedia (Bank/E-Wallet) <span class="text-danger">*</span></label>
-            <input type="text" name="nama_penyedia" value="{{ old('nama_penyedia', $rekening->nama_penyedia) }}" class="form-control" required maxlength="100">
-            @error('nama_penyedia') <div class="text-danger">{{ $message }}</div> @enderror
+            <label class="form-label">Tipe Rekening</label>
+            <input type="text" value="{{ ucfirst($rekening->tipe_rekening) }}" class="form-control" disabled style="background-color: #f8f9fa;">
+        </div>
+
+        {{-- Field: nama_penyedia (Disabled) --}}
+        <div class="form-group">
+            <label class="form-label">Nama Penyedia (Bank/E-Wallet)</label>
+            <input type="text" value="{{ $rekening->nama_penyedia }}" class="form-control" disabled style="background-color: #f8f9fa;">
         </div>
 
         {{-- Field: nama_pemilik --}}
@@ -56,11 +54,10 @@
             @error('nama_pemilik') <div class="text-danger">{{ $message }}</div> @enderror
         </div>
         
-        {{-- Field: nomor_akun --}}
+        {{-- Field: nomor_akun (Disabled) --}}
         <div class="form-group">
-            <label class="form-label">Nomor Akun/Nomor Telepon <span class="text-danger">*</span></label>
-            <input type="text" name="nomor_akun" value="{{ old('nomor_akun', $rekening->nomor_akun) }}" class="form-control" required maxlength="50">
-            @error('nomor_akun') <div class="text-danger">{{ $message }}</div> @enderror
+            <label class="form-label">Nomor Akun/Nomor Telepon</label>
+            <input type="text" value="{{ $rekening->nomor_akun }}" class="form-control" disabled style="background-color: #f8f9fa; letter-spacing: 1px; font-weight: bold;">
         </div>
         
         {{-- Field: status_aktif (Enum/Select) --}}

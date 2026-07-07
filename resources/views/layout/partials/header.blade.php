@@ -10,7 +10,9 @@
         $jastiper = $user->jastiper;
 
         // 3. Logika Pengambilan Notifikasi
-        if ($jastiper) {
+        if ($user->role === 'admin') {
+            $notifications = $user->unreadNotifications;
+        } elseif ($jastiper) {
             $notifications = $jastiper->unreadNotifications;
         } else {
             $notifications = collect([]);
@@ -222,6 +224,7 @@
             <a class="navbar-brand hidden" href="{{ url('/admin/dashboard') }}">
                 <img src="{{ asset('admin/assets/images/logo.png') }}" alt="Logo" style="height:30px;">
             </a>
+            <a id="menuToggle" class="menutoggle"><i class="fa fa-bars"></i></a>
         </div>
     </div>
 
@@ -259,8 +262,31 @@
                             <div class="notif-item-wrap" id="adm-item-{{ $notif->id }}">
                                 <div class="btn-check-mark" onclick="markOne('{{ $notif->id }}', event)"><i
                                         class="fa fa-check"></i></div>
-                                <a href="{{ isset($notif->data['pesanan_id']) ? route('pesanan.riwayat') : '#' }}"
-                                    class="notif-link-item" onclick="markOne('{{ $notif->id }}')">
+                                @php
+                                    $link = '#';
+                                    if ($user->role === 'jastiper') {
+                                        if (isset($notif->data['jenis_notifikasi']) && $notif->data['jenis_notifikasi'] === 'Pelepasan Dana') {
+                                            $link = route('jastiper.laporan-keuntungan.index');
+                                        } elseif (isset($notif->data['jenis_notifikasi']) && $notif->data['jenis_notifikasi'] === 'Rekening Jastiper Salah') {
+                                            $link = route('jastiper.rekening.index');
+                                        } elseif (isset($notif->data['pesanan_id'])) {
+                                            $link = route('jastiper.pesanan.index', ['open_detail' => $notif->data['pesanan_id']]);
+                                        }
+                                    } elseif ($user->role === 'admin') {
+                                        $jenis = $notif->data['jenis_notifikasi'] ?? '';
+                                        if ($jenis === 'Permintaan Tarik Saldo') {
+                                            $link = route('admin.penarikan-dana.index');
+                                        } elseif ($jenis === 'Komplain Baru') {
+                                            $link = route('admin.komplain.index');
+                                        } elseif ($jenis === 'Pembayaran Baru' || $jenis === 'Pesanan Selesai') {
+                                            $link = route('admin.konfirmasi-pembayaran.index');
+                                        } else {
+                                            $link = route('admin.dashboard.index');
+                                        }
+                                    }
+                                @endphp
+                                <a href="{{ $link }}"
+                                    class="notif-link-item" onclick="markLinkAndGo(event, '{{ $notif->id }}', '{{ $link }}')">
                                     <div style="font-weight:bold; color:#006FFF; font-size:0.9rem;">
                                         {{ $notif->data['jenis_notifikasi'] ?? 'Info' }}</div>
                                     <div style="font-size:0.85rem; color:#555; margin:2px 0;">{!! Str::markdown($notif->data['pesan'] ?? '') !!}
@@ -277,24 +303,38 @@
                     @if ($notifCount > 0)
                         <div class="notif-footer-btn" id="admFooter" onclick="markAll()">Tandai Semua Dibaca</div>
                     @endif
-                </div>
-            </div>
-
-            <div class="user-profile-wrapper">
-                <div class="user-avatar-small">
-                    @if (Auth::check() &&
-                            Auth::user()->role === 'jastiper' &&
-                            Auth::user()->jastiper &&
-                            !empty(Auth::user()->jastiper->profile_toko))
-                        <img src="{{ asset('storage/' . Auth::user()->jastiper->profile_toko) }}" alt="Toko"
-                            style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
-                    @else
-                        <i class="fa fa-user"></i>
+                    @if ($user->role === 'jastiper')
+                        <a href="{{ route('jastiper.notifikasi.index') }}" style="display:block; text-align:center; padding:10px 15px; font-size:0.85rem; color:#006FFF; font-weight:600; border-top:1px solid #eee; text-decoration:none;">
+                            Lihat Semua Notifikasi <i class="fa fa-arrow-right" style="font-size:0.75rem;"></i>
+                        </a>
                     @endif
                 </div>
-
-                <span>{{ Auth::check() ? Auth::user()->name : 'Guest' }}</span>
             </div>
+
+            @php
+                $profileRoute = Auth::check() && Auth::user()->role === 'admin' 
+                    ? route('admin.profile.index') 
+                    : (Auth::check() && Auth::user()->role === 'jastiper' ? route('jastiper.profile.index') : '#');
+            @endphp
+            <a href="{{ $profileRoute }}" style="text-decoration: none;">
+                <div class="user-profile-wrapper">
+                    <div class="user-avatar-small">
+                        @if (Auth::check())
+                            @if (Auth::user()->role === 'jastiper' && Auth::user()->jastiper && !empty(Auth::user()->jastiper->profile_toko))
+                                <img src="{{ Auth::user()->jastiper->profile_toko }}" alt="Toko" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+                            @elseif (!empty(Auth::user()->avatar))
+                                <img src="{{ Auth::user()->avatar }}" alt="User" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+                            @else
+                                <i class="fa fa-user"></i>
+                            @endif
+                        @else
+                            <i class="fa fa-user"></i>
+                        @endif
+                    </div>
+
+                    <span>{{ Auth::check() ? Auth::user()->name : 'Guest' }}</span>
+                </div>
+            </a>
 
         </div>
     </div>
@@ -316,6 +356,23 @@
         document.addEventListener("click", function(e) {
             if (trigger && !trigger.contains(e.target)) trigger.classList.remove("active");
         });
+
+        // Fungsi khusus untuk mengklik isi notifikasi agar di-mark read dulu sebelum redirect
+        window.markLinkAndGo = function(evt, id, url) {
+            evt.preventDefault();
+            evt.stopPropagation();
+            fetch(`/notifikasi/${id}/read`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrf,
+                    'Content-Type': 'application/json'
+                }
+            }).then(() => {
+                if (url && url !== '#') window.location.href = url;
+            }).catch(() => {
+                if (url && url !== '#') window.location.href = url;
+            });
+        };
 
         // Fungsi Mark One
         window.markOne = function(id, evt = null) {

@@ -77,7 +77,8 @@
         .item-image img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            background: white;
         }
 
         .item-details {
@@ -318,7 +319,7 @@
                         <span id="summary-total">Rp 0</span>
                     </div>
 
-                    <button type="submit" class="btn-checkout" id="btn-checkout" disabled>
+                    <button type="submit" class="btn-checkout" id="btn-checkout" disabled onclick="prepareCheckoutForm()">
                         Checkout (<span id="count-selected">0</span>)
                     </button>
                 </form>
@@ -389,6 +390,24 @@
                     calculateTotal();
                 });
             }
+
+            // Fungsi untuk memastikan semua checkbox terpilih masuk ke dalam form saat submit
+            window.prepareCheckoutForm = function() {
+                const form = document.getElementById('checkout-form');
+                // Hapus input hidden lama jika ada
+                form.querySelectorAll('.hidden-checkout-input').forEach(el => el.remove());
+                
+                checkboxes.forEach(cb => {
+                    if (cb.checked) {
+                        const hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = 'selected_products[]';
+                        hiddenInput.value = cb.value;
+                        hiddenInput.className = 'hidden-checkout-input';
+                        form.appendChild(hiddenInput);
+                    }
+                });
+            };
 
             calculateTotal();
         });

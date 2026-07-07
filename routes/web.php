@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\RekeningController;
 use App\Http\Controllers\Admin\LogAktivitasController;
 use App\Http\Controllers\Admin\UlasanController as AdminUlasanController;
 use App\Http\Controllers\Admin\NotifikasiController;
+use App\Http\Controllers\Admin\LaporanController as AdminLaporanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,7 +55,9 @@ use App\Http\Controllers\Jastiper\UlasanController as JastiperUlasanController;
 use App\Http\Controllers\Jastiper\LaporanController;
 use App\Http\Controllers\Jastiper\LaporanKeuntunganJastiperController;
 use App\Http\Controllers\Jastiper\ProfileController as JastiperProfileController;
+use App\Http\Controllers\User\ProfileController as UserProfileController;
 use App\Http\Controllers\Jastiper\DashboardJastiperController;
+use App\Http\Controllers\ChatController;
 
 
 /*
@@ -62,6 +65,8 @@ use App\Http\Controllers\Jastiper\DashboardJastiperController;
 | ROOT ROUTES
 |--------------------------------------------------------------------------
 */
+
+
 
 Route::get('/', [AuthController::class, 'landing'])->name('home');
 
@@ -75,16 +80,26 @@ Route::get('/produk/{id}', [AuthController::class, 'showProductDetail'])->name('
 Route::get('/lupa-password', function () {return view('lupa-password');})
     ->name('password.secure');
 
-Route::post('/lupa-password', [SecureResetPasswordController::class, 'reset'])
+Route::post('/lupa-password', [SecureResetPasswordController::class, 'sendOtp'])
     ->name('password.secure.post');
 
-Route::post('/lupa-password', [SecureResetPasswordController::class, 'reset'])
+Route::post('/lupa-password/throttle', [SecureResetPasswordController::class, 'sendOtp'])
     ->middleware('throttle:5,1')
-    ->name('password.secure.post');
+    ->name('password.secure.post.throttle');
+
+Route::get('/lupa-password/verify', [SecureResetPasswordController::class, 'verifyForm'])
+    ->name('lupa.password.verify.form');
+    
+Route::post('/lupa-password/reset', [SecureResetPasswordController::class, 'reset'])
+    ->name('lupa.password.reset.post');
 
 
 Route::get('/login',    [AuthController::class, 'loginForm'])->name('login');
 Route::post('/login',   [AuthController::class, 'login'])->name('login.post');
+
+// Rute Login Google
+Route::get('/auth/google', [App\Http\Controllers\Auth\GoogleAuthController::class, 'redirectToGoogle'])->name('google.login');
+Route::get('/auth/google/callback', [App\Http\Controllers\Auth\GoogleAuthController::class, 'handleGoogleCallback'])->name('google.callback');
 
 Route::get('/register', [AuthController::class, 'registerForm'])->name('register');
 Route::post('/register', [AuthController::class, 'register'])->name('register.post');
@@ -92,11 +107,11 @@ Route::post('/register', [AuthController::class, 'register'])->name('register.po
 Route::post('/logout',  [AuthController::class, 'logout'])
     ->name('logout')->middleware('auth');
 
-Route::post('/notifikasi/{notification}/read', [NotifikasiController::class, 'markAsRead'])->name('notifikasi.markAsRead');
-
-Route::post('/notifikasi/read-all', [NotifikasiController::class, 'markAllAsRead'])->name('notifikasi.markAllAsRead');
-
-Route::delete('/notifikasi/{notification}', [NotifikasiController::class, 'destroy'])->name('notifikasi.destroy');
+Route::middleware(['auth'])->group(function () {
+    Route::post('/notifikasi/{notification}/read', [NotifikasiController::class, 'markAsRead'])->name('notifikasi.markAsRead');
+    Route::post('/notifikasi/read-all', [NotifikasiController::class, 'markAllAsRead'])->name('notifikasi.markAllAsRead');
+    Route::delete('/notifikasi/{notification}', [NotifikasiController::class, 'destroy'])->name('notifikasi.destroy');
+});
 
 Route::get('/tatacara-belanja', function () {
     return view('user.cara-belanja.index');
@@ -121,6 +136,7 @@ Route::middleware(['auth'])->group(function () {
     // Riwayat Pesanan
     Route::get('/pesanan/riwayat', [UserPesananController::class, 'riwayat'])->name('pesanan.riwayat');
     Route::put('/pesanan/{id}/complete', [UserPesananController::class, 'completeOrder'])->name('pesanan.complete');
+    Route::post('/pesanan/{id}/komplain', [UserPesananController::class, 'ajukanKomplain'])->name('pesanan.komplain');
 
     // Ulasan
     Route::post('/ulasan/{pesanan}', [UlasanController::class, 'store'])->name('ulasan.store');
@@ -130,11 +146,30 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/checkout/prepare', [CheckoutController::class, 'prepareCheckout'])->name('checkout.prepare');
     Route::post('/checkout/next', [CheckoutController::class, 'processStep'])->name('checkout.process');
     Route::get('/checkout/previous', [CheckoutController::class, 'previousStep'])->name('checkout.previous');
+    Route::post('/checkout/simulate', [CheckoutController::class, 'simulatePayment'])->name('checkout.simulate');
     Route::get('/finish', [CheckoutController::class, 'finalizeCheckout'])->name('checkout.finish');
 
     // Jastiper Registration
     Route::get('/jastiper/daftar', [JastiperRegistrationController::class, 'create'])->name('jastiper.register.create');
     Route::post('/jastiper/daftar', [JastiperRegistrationController::class, 'store'])->name('jastiper.register.store');
+
+    // Profile User
+    Route::get('/profil-saya', [UserProfileController::class, 'index'])->name('user.profile.index');
+    Route::put('/profil-saya', [UserProfileController::class, 'update'])->name('user.profile.update');
+    Route::post('/profil-saya/avatar', [UserProfileController::class, 'updateAvatar'])->name('user.profile.avatar');
+    Route::post('/profil-saya/password', [UserProfileController::class, 'updatePassword'])->name('user.profile.password');
+
+    // Live Chat
+    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+    Route::get('/chat/contacts', [ChatController::class, 'getContacts'])->name('chat.contacts');
+    Route::get('/chat/messages/{contactId}', [ChatController::class, 'fetchMessages'])->name('chat.messages');
+    Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('chat.send');
+
+    // Request Barang (Lelang Jastip)
+    Route::get('/request-barang', [\App\Http\Controllers\User\RequestBarangController::class, 'index'])->name('request-barang.index');
+    Route::post('/request-barang', [\App\Http\Controllers\User\RequestBarangController::class, 'store'])->name('request-barang.store');
+    Route::get('/request-barang/{id}', [\App\Http\Controllers\User\RequestBarangController::class, 'show'])->name('request-barang.show');
+    Route::post('/request-barang/{id}/terima/{tawaran_id}', [\App\Http\Controllers\User\RequestBarangController::class, 'terimaTawaran'])->name('request-barang.terima');
 
 
     // lihat profil jastiper
@@ -142,6 +177,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/toko/{id}/follow', [JastiperFollowController::class, 'toggle'])
     ->middleware('auth')
     ->name('toko.follow');
+
+    // Laporan Toko/Jastiper
+    Route::post('/laporan', [\App\Http\Controllers\LaporanController::class, 'store'])->name('laporan.store');
 });
 
 /*
@@ -157,6 +195,8 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
         // Profile
+        Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
+        Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.updateAvatar');
 
         // Ulasan
@@ -174,12 +214,17 @@ Route::middleware(['auth', 'role:admin'])
 
         // Jastiper
         Route::resource('jastiper', JastiperController::class);
+        Route::post('jastiper/{jastiper}/ban', [JastiperController::class, 'ban'])->name('jastiper.ban');
 
         // Kategori
         Route::resource('kategori', KategoriController::class);
 
         // Rekening
         Route::resource('rekening', RekeningController::class);
+
+        // Laporan Pengguna
+        Route::get('laporan', [AdminLaporanController::class, 'index'])->name('laporan.index');
+        Route::post('laporan/{id}/action', [AdminLaporanController::class, 'action'])->name('laporan.action');
 
         // Laporan Keuntungan
         Route::get('laporan-keuntungan', [LaporanKeuntunganController::class, 'index'])
@@ -208,6 +253,27 @@ Route::middleware(['auth', 'role:admin'])
 
         Route::post('pelepasan-dana/{pesanan}', [PembayaranAdminController::class, 'lepasDanaKeJastiper'])
             ->name('lepas-dana-jastiper');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Kelola Dana - Komplain & Refund
+        |--------------------------------------------------------------------------
+        */
+        Route::get('komplain', [App\Http\Controllers\Admin\KomplainController::class, 'index'])->name('komplain.index');
+        Route::post('komplain/{id}/tolak', [App\Http\Controllers\Admin\KomplainController::class, 'tolak'])->name('komplain.tolak');
+        Route::post('komplain/{id}/setujui', [App\Http\Controllers\Admin\KomplainController::class, 'setujui'])->name('komplain.setujui');
+
+        Route::get('refund', [App\Http\Controllers\Admin\RefundController::class, 'index'])->name('refund.index');
+        Route::post('refund/{id}/proses', [App\Http\Controllers\Admin\RefundController::class, 'proses'])->name('refund.proses');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Kelola Dana - Penarikan Dana Jastiper
+        |--------------------------------------------------------------------------
+        */
+        Route::get('penarikan-dana', [App\Http\Controllers\Admin\PenarikanAdminController::class, 'index'])->name('penarikan-dana.index');
+        Route::post('penarikan-dana/{id}/proses', [App\Http\Controllers\Admin\PenarikanAdminController::class, 'proses'])->name('penarikan-dana.proses');
+        Route::post('penarikan-dana/{id}/tolak', [App\Http\Controllers\Admin\PenarikanAdminController::class, 'tolak'])->name('penarikan-dana.tolak');
     });
 
 /*
@@ -252,9 +318,25 @@ Route::middleware(['auth', 'role:jastiper'])
         // Detail Pesanan
         Route::resource('detail-pesanan', DetailPesananController::class);
 
+        // Marketplace Request Barang
+        Route::get('/marketplace-request', [\App\Http\Controllers\Jastiper\MarketplaceRequestController::class, 'index'])->name('marketplace-request.index');
+        Route::post('/marketplace-request/{id}/tawar', [\App\Http\Controllers\Jastiper\MarketplaceRequestController::class, 'storeTawaran'])->name('marketplace-request.tawar');
+
         // Barang
         Route::resource('barang', BarangController::class);
 
         // Ulasan
         Route::resource('ulasans', JastiperUlasanController::class)->only(['index', 'show']);
+
+        // Dompet (Tarik Dana)
+        Route::get('/dompet', [App\Http\Controllers\Jastiper\JastiperDompetController::class, 'index'])->name('dompet.index');
+        Route::post('/dompet/withdraw', [App\Http\Controllers\Jastiper\JastiperDompetController::class, 'requestWithdraw'])->name('dompet.withdraw');
+
+        // Rekening Bank
+        Route::post('/rekening/{rekening}/set-utama', [App\Http\Controllers\Jastiper\RekeningController::class, 'setUtama'])->name('rekening.setUtama');
+        Route::resource('/rekening', App\Http\Controllers\Jastiper\RekeningController::class)->except(['show']);
+
+        // Notifikasi
+        Route::get('/notifikasi', [App\Http\Controllers\Jastiper\NotifikasiController::class, 'index'])->name('notifikasi.index');
     });
+

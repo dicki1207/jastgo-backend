@@ -61,26 +61,30 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
 
             <div class="user-controls" style="display:flex; align-items:center; gap:8px;">
-                <input id="searchIdInput" class="user-search-input" type="text"
-                    placeholder="Cari berdasarkan ID / Username / Nama / Email"
-                    style="padding:8px 12px; border:1px solid #DDE0E3; border-radius:8px; width:320px;">
+                <form action="{{ route('admin.pengguna.index') }}" method="GET" style="display:flex; align-items:center; gap:8px; margin:0;">
+                    <select name="role" class="form-control" style="width: auto; padding:8px 12px; border-radius:8px; border:1px solid #DDE0E3;">
+                        <option value="">Semua Role</option>
+                        <option value="pengguna" {{ request('role') == 'pengguna' ? 'selected' : '' }}>Pengguna</option>
+                        <option value="jastiper" {{ request('role') == 'jastiper' ? 'selected' : '' }}>Jastiper</option>
+                        <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Admin</option>
+                    </select>
+                    
+                    <input name="q" id="searchIdInput" class="user-search-input" type="text"
+                        placeholder="Cari berdasarkan ID / Username / Nama / Email"
+                        value="{{ request('q') }}"
+                        style="padding:8px 12px; border:1px solid #DDE0E3; border-radius:8px; width:320px;">
 
-                <button id="btnSearchId" class="btn-search"
-                    style="padding:8px 18px; border-radius:8px; border:1px solid #007bff; background:#fff; color:#007bff;">
-                    Search
-                </button>
+                    <button type="submit" id="btnSearchId" class="btn-search"
+                        style="padding:8px 18px; border-radius:8px; border:1px solid #007bff; background:#fff; color:#007bff;">
+                        Search
+                    </button>
+                </form>
 
                 <div style="margin-left:12px; color:#6c7680;">
-                    Total: <strong>{{ $users->total() ?? $users->count() }}</strong>
-                    &nbsp;|&nbsp;
-                    Ditampilkan: <strong>{{ $users->count() }}</strong>
+                    Total: <strong>{{ $users->total() }}</strong>
                 </div>
             </div>
 
-            {{-- <a href="{{ route('admin.pengguna.create') }}" class="btn-add-user"
-                style="padding:8px 14px; background:#007bff; color:white; border-radius:8px;">
-                + Tambah Pengguna
-            </a> --}}
         </div>
 
         {{-- TABLE --}}
@@ -141,9 +145,9 @@
         </div>
 
         {{-- PAGINATION --}}
-        {{-- <div class="mt-3">
-            {{ $users->links() }}
-        </div> --}}
+        <div class="mt-3 d-flex justify-content-center">
+            {{ $users->links('pagination::bootstrap-4') }}
+        </div>
 
     </div>
 @endsection
@@ -159,52 +163,12 @@
             $('#usersTable').DataTable({
                 paging: false,
                 info: false,
-                searching: false,
+                searching: false, // Matikan JS search karena pakai backend
                 ordering: true,
                 columnDefs: [
                     { orderable: false, targets: [8] } // kolom Operasi (index dimulai 0)
                 ]
             });
-
-            // Search (by ID, username, name, email)
-            function filterRows(query) {
-                query = (query || '').toString().toLowerCase().trim();
-                if (!query) {
-                    $('#usersTable tbody tr').show();
-                    return;
-                }
-
-                $('#usersTable tbody tr').each(function () {
-                    var $tr = $(this);
-                    var id = String($tr.data('id') || '').toLowerCase();
-                    var username = String($tr.data('username') || '').toLowerCase();
-                    var name = String($tr.data('name') || '').toLowerCase();
-                    var email = String($tr.data('email') || '').toLowerCase();
-
-                    var matches = id.indexOf(query) !== -1 ||
-                        username.indexOf(query) !== -1 ||
-                        name.indexOf(query) !== -1 ||
-                        email.indexOf(query) !== -1;
-
-                    matches ? $tr.show() : $tr.hide();
-                });
-            }
-
-            document.getElementById('btnSearchId').addEventListener('click', function () {
-                filterRows(document.getElementById('searchIdInput').value);
-            });
-
-            document.getElementById('searchIdInput').addEventListener('keyup', function (e) {
-                // live filter on type (debounce simple)
-                var q = this.value;
-                if (this._timer) clearTimeout(this._timer);
-                this._timer = setTimeout(function () {
-                    filterRows(q);
-                }, 200);
-
-                if (e.key === 'Enter') filterRows(this.value);
-            });
-
         });
     </script>
 @endpush

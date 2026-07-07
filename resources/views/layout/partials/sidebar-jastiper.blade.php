@@ -5,6 +5,14 @@
             <div id="main-menu" class="main-menu collapse navbar-collapse">
                 <ul class="nav navbar-nav">
 
+                    {{-- Link ke Halaman Utama (Beranda) agar Jastiper bisa berbelanja --}}
+                    <li>
+                        <a href="{{ url('/') }}" target="_blank">
+                            <i class="fa fa-home" style="width:20px;margin-right:12px;text-align:center;font-size:1.2em;color:#007bff;"></i>
+                            Ke Beranda Utama
+                        </a>
+                    </li>
+
                     {{-- Dashboard jastiper bisa diarahkan ke admin/dashboard dulu --}}
                     <li class="{{ request()->is('jastiper') || request()->is('jastiper/dashboard*') ? 'active' : '' }}">
                         <a href="{{ route('jastiper.dashboard.index') }}">
@@ -38,6 +46,13 @@
                         </a>
                     </li>
 
+                    <li class="{{ request()->is('jastiper/marketplace-request*') ? 'active' : '' }}">
+                        <a href="{{ route('jastiper.marketplace-request.index') }}">
+                            <i class="fa fa-shopping-bag" style="width:20px;margin-right:12px;text-align:center;font-size:1.2em;color:#28a745;"></i>
+                            Pasar Jastip
+                        </a>
+                    </li>
+
                     {{-- <li class="{{ request()->is('jastiper/kategori-barang*') ? 'active' : '' }}">
                     <a href="{{ route('jastiper.kategori-barang.index') }}">
                         <img src="{{ asset('admin/assets/images/icons/barang.svg') }}"
@@ -46,13 +61,21 @@
                     </a>
                 </li> --}}
 
-                    {{-- <li class="{{ request()->is('jastiper/rekening*') ? 'active' : '' }}">
-                    <a href="{{ route('jastiper.rekening.index') }}">
-                        <img src="{{ asset('admin/assets/images/icons/pembayaran.svg') }}"
-                            style="width:20px;margin-right:12px" alt="Rekening">
-                        Rekening
-                    </a>
-                </li> --}}
+                    <li class="{{ request()->is('jastiper/dompet*') ? 'active' : '' }}">
+                        <a href="{{ route('jastiper.dompet.index') }}">
+                            <img src="{{ asset('admin/assets/images/icons/laporan.svg') }}"
+                                style="width:20px;margin-right:12px" alt="Keuangan">
+                            Keuangan & Dompet
+                        </a>
+                    </li>
+
+                    <li class="{{ request()->is('jastiper/rekening*') ? 'active' : '' }}">
+                        <a href="{{ route('jastiper.rekening.index') }}">
+                            <img src="{{ asset('admin/assets/images/icons/ulasan.svg') }}"
+                                style="width:20px;margin-right:12px" alt="Rekening">
+                            Rekening Bank
+                        </a>
+                    </li>
 
                     {{-- kalau jastiper juga bisa lihat ulasan --}}
                     <li class="{{ request()->is('jastiper/ulasans*') ? 'active' : '' }}">
@@ -62,28 +85,30 @@
                             Ulasan
                         </a>
                     </li>
-                    {{-- Notifikasi - Jastiper --}}
-                    {{-- <li class="{{ request()->is('jastiper/notifikasi*') ? 'active' : '' }}">
-                    <a href="{{ route('jastiper.notifikasi.index') }}">
-                        <img src="{{ asset('admin/assets/images/icons/notification.svg') }}" alt="Notifikasi"
-                            style="width:20px;margin-right:12px">
-                        Notifikasi
-                    </a>
-                </li> --}}
-                    <li class="{{ request()->is('jastiper/laporan*') ? 'active' : '' }}">
-                        <a href="{{ route('jastiper.laporan-keuntungan.index') }}">
-                            <img src="{{ asset('admin/assets/images/icons/laporan.svg') }}"
-                                style="width:20px;margin-right:12px" alt="Laporan">
-                            Laporan Penjualan
+
+                    {{-- Link ke Live Chat --}}
+                    <li class="{{ request()->is('chat*') ? 'active' : '' }}">
+                        <a href="{{ route('chat.index') }}">
+                            <i class="fa fa-comments" style="width:20px;margin-right:12px;text-align:center;font-size:1.2em;color:#28a745;"></i>
+                            Live Chat
                         </a>
                     </li>
-                    <li class="{{ request()->is('jastiper/profile*') ? 'active' : '' }}">
+                    
+                    {{-- Notifikasi - Jastiper --}}
+                    <li class="{{ request()->is('jastiper/notifikasi*') ? 'active' : '' }}">
+                        <a href="{{ route('jastiper.notifikasi.index') }}">
+                            <i class="fa fa-bell" style="width:20px;margin-right:12px;text-align:center;font-size:1.2em;color:#ffc107;"></i>
+                            Notifikasi
+                        </a>
+                    </li>
+                    {{-- Laporan Penjualan di-merge ke Dompet/Keuangan --}}
+                    {{-- <li class="{{ request()->is('jastiper/profile*') ? 'active' : '' }}">
                         <a href="{{ route('jastiper.profile.index') }}">
                             <img src="{{ asset('admin/assets/images/icons/profil.svg') }}"
                                 style="width:20px;margin-right:12px" alt="Profile">
                             Profile
                         </a>
-                    </li>
+                    </li> --}}
 
 
 

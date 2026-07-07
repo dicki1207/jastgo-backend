@@ -11,10 +11,28 @@ use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::orderBy('id', 'desc')->paginate(15);
-        return view('admin.pengguna.index', compact('users'));
+        $q = $request->query('q');
+        $role = $request->query('role');
+
+        $query = User::orderBy('id', 'desc');
+
+        if ($q) {
+            $query->where(function($w) use ($q){
+                $w->where('id', $q)
+                  ->orWhere('name', 'like', "%{$q}%")
+                  ->orWhere('username', 'like', "%{$q}%")
+                  ->orWhere('email', 'like', "%{$q}%");
+            });
+        }
+
+        if ($role) {
+            $query->where('role', $role);
+        }
+
+        $users = $query->paginate(15)->withQueryString();
+        return view('admin.pengguna.index', compact('users', 'q', 'role'));
     }
 
     public function create()

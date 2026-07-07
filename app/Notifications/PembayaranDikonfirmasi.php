@@ -22,9 +22,20 @@ class PembayaranDikonfirmasi extends Notification
     public function via($notifiable)
     {
         // Notifikasi akan disimpan ke database
-        return ['database']; 
+        return ['database', \App\Channels\FcmChannel::class]; 
     }
 
+        public function toFcm($notifiable)
+    {
+        $data = $this->toDatabase($notifiable);
+        return [
+            'title' => $data['jenis_notifikasi'] ?? 'Notifikasi JastGo',
+            'body' => strip_tags($data['pesan'] ?? 'Anda memiliki pemberitahuan baru.'),
+            'data' => [
+                'type' => 'system_notification'
+            ]
+        ];
+    }
     public function toDatabase($notifiable)
     {
         // Data yang akan disimpan ke kolom 'data' di tabel notifikasi

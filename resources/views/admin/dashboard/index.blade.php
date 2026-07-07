@@ -147,7 +147,7 @@
                 <i class="fa fa-th-large"></i>
             </div>
             <div class="stat-text">
-                <div class="stat-value">{{ $totalUsers }}</div>
+                <div class="stat-value count-up" data-target="{{ $totalUsers }}">0</div>
                 <div class="stat-label">Banyak User</div>
             </div>
         </div>
@@ -158,7 +158,7 @@
                 <i class="fa fa-th-large"></i>
             </div>
             <div class="stat-text">
-                <div class="stat-value">{{ $totalTransaksiSelesai }}</div>
+                <div class="stat-value count-up" data-target="{{ $totalTransaksiSelesai }}">0</div>
                 <div class="stat-label">Pembayaran Selesai</div>
             </div>
         </div>
@@ -170,7 +170,7 @@
             </div>
             <div class="stat-text">
                 {{-- Format agar mirip Rp80.000.000 (jika nilainya besar, tampilkan full) --}}
-                <div class="stat-value">Rp{{ number_format($pendapatanAdminTotal, 0, ',', '.') }}</div>
+                <div class="stat-value count-up" data-target="{{ $pendapatanAdminTotal }}" data-prefix="Rp" data-is-currency="true">Rp0</div>
                 <div class="stat-label">Pendapatan Admin</div>
             </div>
         </div>
@@ -182,7 +182,7 @@
             </div>
             <div class="stat-text">
                 {{-- Menggunakan count Dana Dilepas --}}
-                <div class="stat-value">{{ $danaChartData['DILEPAS'] ?? 0 }}</div>
+                <div class="stat-value count-up" data-target="{{ $danaChartData['DILEPAS'] ?? 0 }}">0</div>
                 <div class="stat-label">Dana dilepas</div>
             </div>
         </div>
@@ -260,9 +260,10 @@
                 <div class="chart-container-lg">
                     <canvas id="pertumbuhanChart"></canvas>
                 </div>
-            </div>
         </div>
     </div>
+
+
     
 @endsection
 
@@ -457,6 +458,52 @@
                 }
             });
         }
+
+        /* ========================================================================= */
+        /* COUNT-UP ANIMATION UNTUK STAT KARTU ATAS */
+        /* ========================================================================= */
+        const counters = document.querySelectorAll('.count-up');
+        const speed = 100; // Pembagi kecepatan, makin kecil makin cepat
+        
+        counters.forEach(counter => {
+            const updateCount = () => {
+                const target = +counter.getAttribute('data-target');
+                if (isNaN(target) || target === 0) {
+                    const prefix = counter.getAttribute('data-prefix') || '';
+                    counter.innerText = prefix + '0';
+                    return;
+                }
+
+                const currentText = counter.innerText.replace(/[^0-9]/g, '');
+                let current = currentText === '' ? 0 : +currentText;
+                const inc = Math.max(1, Math.ceil(target / speed));
+
+                if (current < target) {
+                    let nextValue = current + inc;
+                    if(nextValue > target) nextValue = target;
+
+                    const prefix = counter.getAttribute('data-prefix') || '';
+                    const isCurrency = counter.getAttribute('data-is-currency') === 'true';
+
+                    if(isCurrency) {
+                        counter.innerText = prefix + nextValue.toLocaleString('id-ID');
+                    } else {
+                        counter.innerText = prefix + nextValue;
+                    }
+                    setTimeout(updateCount, 15);
+                } else {
+                    const prefix = counter.getAttribute('data-prefix') || '';
+                    const isCurrency = counter.getAttribute('data-is-currency') === 'true';
+                    if(isCurrency) {
+                        counter.innerText = prefix + target.toLocaleString('id-ID');
+                    } else {
+                        counter.innerText = prefix + target;
+                    }
+                }
+            };
+            updateCount();
+        });
+
     });
 </script>
 @endpush 

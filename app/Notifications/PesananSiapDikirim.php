@@ -21,9 +21,20 @@ class PesananSiapDikirim extends Notification
 
     public function via($notifiable)
     {
-        return ['database']; // Simpan ke database
+        return ['database', \App\Channels\FcmChannel::class]; // Simpan ke database
     }
 
+        public function toFcm($notifiable)
+    {
+        $data = $this->toDatabase($notifiable);
+        return [
+            'title' => $data['jenis_notifikasi'] ?? 'Notifikasi JastGo',
+            'body' => strip_tags($data['pesan'] ?? 'Anda memiliki pemberitahuan baru.'),
+            'data' => [
+                'type' => 'system_notification'
+            ]
+        ];
+    }
     public function toDatabase($notifiable)
     {
         return [

@@ -19,9 +19,20 @@ class PembayaranDitolak extends Notification
 
     public function via($notifiable)
     {
-        return ['database'];
+        return ['database', \App\Channels\FcmChannel::class];
     }
 
+        public function toFcm($notifiable)
+    {
+        $data = $this->toDatabase($notifiable);
+        return [
+            'title' => $data['jenis_notifikasi'] ?? 'Notifikasi JastGo',
+            'body' => strip_tags($data['pesan'] ?? 'Anda memiliki pemberitahuan baru.'),
+            'data' => [
+                'type' => 'system_notification'
+            ]
+        ];
+    }
     public function toDatabase($notifiable)
     {
         return [

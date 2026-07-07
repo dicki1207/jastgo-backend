@@ -1,83 +1,11 @@
 @extends('layout.admin-app')
 
-@section('title', 'Manajemen Dana Pesanan - Admin')
-@section('page-title', 'Konfirmasi & Pelepasan Dana')
+@section('title', 'Manajemen Pelepasan Dana - Admin')
+@section('page-title', 'Pelepasan Dana Jastiper')
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('admin/assets/css/custom-user_table.css') }}">
     <style>
-        .status-badge {
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            display: inline-block;
-            min-width: 100px;
-            text-align: center;
-            letter-spacing: 0.3px;
-        }
-
-        .status-menunggu {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-        }
-
-        .status-selesai {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .status-gagal {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .btn-action-custom {
-            border: none;
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-size: 0.813rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            letter-spacing: 0.3px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .btn-konfirmasi {
-            background: #2b6be6;
-            color: white;
-            /* Hapus min-width agar muat dua tombol */
-        }
-
-        .btn-konfirmasi:hover {
-            background: #225abc;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(43, 107, 230, 0.3);
-        }
-
-        /* --- STYLE BARU: TOMBOL TOLAK --- */
-        .btn-tolak {
-            background: #fff;
-            color: #dc3545;
-            border: 1px solid #dc3545;
-            margin-left: 5px;
-        }
-
-        .btn-tolak:hover {
-            background: #dc3545;
-            color: white;
-            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
-            transform: translateY(-1px);
-        }
-
         .row-pelepasan-dana>td {
             background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%);
             border-top: 2px solid #e9ecef !important;
@@ -176,19 +104,6 @@
             font-size: 0.938rem;
         }
 
-        .link-primary {
-            color: #2b6be6;
-            font-weight: 600;
-            text-decoration: none;
-            font-size: 0.813rem;
-            transition: color 0.2s ease;
-        }
-
-        .link-primary:hover {
-            color: #225abc;
-            text-decoration: underline;
-        }
-
         .user-info-label {
             color: #6c757d;
             font-size: 0.75rem;
@@ -224,16 +139,6 @@
             border-color: #f5c6cb;
         }
 
-        .total-badge {
-            background: #fff3cd;
-            color: #856404;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.813rem;
-            border: 1px solid #ffeaa7;
-        }
-
         .empty-state {
             text-align: center;
             padding: 40px 20px;
@@ -260,8 +165,7 @@
 
 @section('content')
     <div class="user-table-card">
-        <h2 class="user-table-title">Konfirmasi & Pelepasan Dana</h2>
-
+        <h2 class="user-table-title">Pelepasan Dana Jastiper</h2>
 
         <div class="d-flex justify-content-between align-items-center mb-3">
             <form method="GET" action="{{ route('admin.konfirmasi-pembayaran.index') }}"
@@ -283,8 +187,8 @@
             </form>
         </div>
         <p class="info-subtitle">
-            Daftar ini mencakup pesanan yang memerlukan <strong>Konfirmasi Pembayaran User</strong> dan <strong>Pelepasan
-                Dana</strong> ke Jastiper.
+            Daftar ini mencakup semua pesanan yang dananya sedang <strong>TERTAHAN</strong> di sistem (Escrow).<br>
+            Pelepasan Dana ke rekening Jastiper hanya bisa dilakukan jika pesanan sudah berstatus <strong>SELESAI</strong>.
         </p>
 
         @if (session('success'))
@@ -302,161 +206,91 @@
             <table class="table table-custom">
                 <thead>
                     <tr>
-                        <th class="col-id">ID</th>
-                        <th class="col-name">User / Jastiper</th>
+                        <th class="col-id">ID Pesanan</th>
+                        <th class="col-name">Info Pesanan</th>
                         <th class="col-name">Rekening Jastiper</th>
-                        <th class="col-email">Total Harga</th>
-                        <th class="col-username">Bukti Transfer</th>
-                        <th class="col-tgl">Tanggal Transfer</th>
-                        <th class="col-role">Status</th>
-                        <th class="col-actions" style="text-align:right">Operasi</th>
+                        <th class="col-email">Nominal (Sebelum Potongan)</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($pesanans as $pesanan)
                         {{-- BARIS UTAMA PESANAN --}}
                         <tr>
-                            <td class="col-id">{{ $pesanan->id }}</td>
+                            <td class="col-id">#{{ $pesanan->id }}</td>
                             <td class="col-name">
                                 <div class="mb-1">
-                                    <span class="user-info-label">User:</span>
+                                    <span class="user-info-label">Pembeli:</span>
                                     <span class="user-info-value">{{ $pesanan->user?->name ?? 'N/A' }}</span>
                                 </div>
                                 <div>
-                                    <span class="user-info-label">Jastiper:</span>
+                                    <span class="user-info-label">Toko Jastip:</span>
                                     <span class="user-info-value">{{ $pesanan->jastiper?->nama_toko ?? 'N/A' }}</span>
                                 </div>
                             </td>
                             <td class="col-rekening">
                                 @if ($pesanan->jastiper->rekening)
-                                    <strong
-                                        style="font-weight: 600;">{{ $pesanan->jastiper->rekening->nomor_akun }}</strong>
-                                    <br>
+                                    <strong style="font-weight: 600;">{{ $pesanan->jastiper->rekening->nomor_akun }}</strong><br>
                                     {{ ucfirst($pesanan->jastiper->rekening->tipe_rekening) }} -
                                     {{ $pesanan->jastiper->rekening->nama_penyedia }} -
                                     {{ $pesanan->jastiper->rekening->nama_pemilik }}
                                 @else
-                                    -
+                                    <span class="text-danger">Belum Atur Rekening</span>
                                 @endif
                             </td>
                             <td class="col-email">
-                                <span class="amount-highlight">Rp
-                                    {{ number_format($pesanan->total_harga, 0, ',', '.') }}</span>
-                            </td>
-                            <td class="col-username">
-                                @if ($pesanan->pembayaranUser && $pesanan->pembayaranUser->bukti_tf_path)
-                                    <a href="{{ Storage::url($pesanan->pembayaranUser->bukti_tf_path) }}" target="_blank"
-                                        class="link-primary" title="Lihat Bukti Transfer">
-                                        Lihat Bukti
-                                    </a>
-                                @else
-                                    <span class="text-danger" style="font-size:0.813rem; font-weight:500;">
-                                        Tidak Ada
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="col-tgl">
-                                {{ $pesanan->pembayaranUser?->tanggal_transfer?->format('d/m/Y H:i') ?? '-' }}
-                            </td>
-                            <td class="col-role">
-                                @php
-                                    $badgeClass = '';
-                                    if ($pesanan->status_pesanan === 'MENUNGGU_KONFIRMASI_ADMIN') {
-                                        $badgeClass = 'status-menunggu';
-                                    } elseif ($pesanan->status_pesanan === 'PEMBAYARAN_GAGAL') {
-                                        $badgeClass = 'status-gagal';
-                                    } else {
-                                        $badgeClass = 'status-selesai';
-                                    }
-                                @endphp
-                                <span class="status-badge {{ $badgeClass }}">
-                                    {{ str_replace('_', ' ', $pesanan->status_pesanan) }}
-                                </span>
-                            </td>
-                            <td class="col-actions" style="text-align:right;">
-                                <div class="table-actions">
-                                    @if ($pesanan->status_pesanan === 'MENUNGGU_KONFIRMASI_ADMIN')
-                                        {{-- TOMBOL KONFIRMASI (SUKSES) --}}
-                                        <form action="{{ route('admin.konfirmasi-pembayaran', $pesanan->id) }}"
-                                            method="POST" style="display:inline;">
-                                            @csrf
-                                            <button type="submit" class="btn-action-custom btn-konfirmasi"
-                                                title="Konfirmasi Pembayaran User"
-                                                onclick="return confirm('KONFIRMASI: Apakah Anda yakin Pembayaran Pesanan ID {{ $pesanan->id }} Valid?')">
-                                                ✓ Konfirmasi
-                                            </button>
-                                        </form>
-                                        
-                                        {{-- TOMBOL TOLAK (GAGAL) --}}
-                                        <form action="{{ route('admin.tolak-pembayaran', $pesanan->id) }}"
-                                            method="POST" style="display:inline;">
-                                            @csrf
-                                            <button type="submit" class="btn-action-custom btn-tolak"
-                                                title="Tolak Pembayaran"
-                                                onclick="return confirm('TOLAK: Apakah Anda yakin nominal tidak sesuai? Pesanan akan dibatalkan.')">
-                                                ✕ Gagal
-                                            </button>
-                                        </form>
-
-                                    @elseif($pesanan->status_pesanan === 'DIBATALKAN')
-                                         <span style="color:#dc3545; font-size:0.813rem; font-weight:500;">
-                                            Ditolak Admin
-                                        </span>
-                                    @else
-                                        <span style="color:#6c757d; font-size:0.813rem; font-weight:500;">
-                                            Menunggu Pelepasan Dana
-                                        </span>
-                                    @endif
-                                </div>
+                                <span class="amount-highlight">Rp {{ number_format($pesanan->total_harga, 0, ',', '.') }}</span>
                             </td>
                         </tr>
 
-                        {{-- BARIS FORM PELEPASAN DANA --}}
-                        {{-- FIX: Mengganti kondisi untuk mencakup semua status dana selain DILEPASKAN --}}
-                        @if ($pesanan->status_pesanan === 'SELESAI' && $pesanan->status_dana_jastiper !== 'DILEPASKAN')
-                            <tr class="row-pelepasan-dana">
-                                <td colspan="8">
-                                    <div class="pelepasan-container">
-                                        <div class="pelepasan-title">
-                                            Pelepasan Dana Escrow - Pesanan #{{ $pesanan->id }}
-                                        </div>
+                        {{-- BARIS FORM PELEPASAN DANA (ATAU INFO STATUS) --}}
+                        <tr class="row-pelepasan-dana">
+                            <td colspan="4">
+                                @if($pesanan->status_pesanan === 'SELESAI')
+                                    <style>
+                                        .btn-toggle-pelepasan .fa-chevron-down { transition: transform 0.3s ease; }
+                                        .btn-toggle-pelepasan[aria-expanded="true"] .fa-chevron-down { transform: rotate(180deg); }
+                                    </style>
+                                    <div class="pelepasan-container" style="border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                                        <button class="btn btn-toggle-pelepasan w-100 d-flex justify-content-between align-items-center" type="button" data-toggle="collapse" data-target="#collapseForm{{ $pesanan->id }}" aria-expanded="false" aria-controls="collapseForm{{ $pesanan->id }}" style="padding: 15px 20px; font-weight: bold; color: #006FFF; background: #f8fafc; border: none; text-align: left; box-shadow: none;">
+                                            <span><i class="fa fa-money-bill-wave me-2 text-success"></i> Buka Form Pelepasan Dana</span>
+                                            <i class="fa fa-chevron-down text-muted"></i>
+                                        </button>
 
-                                        <form action="{{ route('admin.lepas-dana-jastiper', $pesanan->id) }}"
-                                            method="POST" enctype="multipart/form-data" class="pelepasan-form">
-                                            @csrf
-
-                                            <div class="form-group-custom">
-                                                <label for="bukti_tf_admin_{{ $pesanan->id }}" class="form-label-custom">
-                                                    Upload Bukti Transfer Admin
-                                                    <span class="amount-highlight">(Rp
-                                                        {{ number_format($pesanan->total_harga * 0.05, 0, ',', '.') }})</span>
-                                                </label>
-                                                <input type="file" name="bukti_tf_admin"
-                                                    id="bukti_tf_admin_{{ $pesanan->id }}" required accept="image/*,.pdf"
-                                                    class="file-input-custom">
-
-                                                @error('bukti_tf_admin')
-                                                    <div class="text-danger"
-                                                        style="font-size: 0.75rem; margin-top: 6px; font-weight: 500;">
-                                                        {{ $message }}
+                                        <div class="collapse" id="collapseForm{{ $pesanan->id }}">
+                                            <div class="row pelepasan-form-wrapper" style="margin: 0; padding: 25px 20px; border-top: 1px solid #e2e8f0;">
+                                            <div class="col-md-12">
+                                                <form class="form-lepas-dana" action="{{ route('admin.lepas-dana-jastiper', $pesanan->id) }}" method="POST">
+                                                    @csrf
+                                                    <h6 class="mb-3 text-primary fw-bold">Persetujuan Dana (Escrow)</h6>
+                                                    
+                                                    <div class="alert alert-info py-2 px-3 small mb-3">
+                                                        <i class="fa fa-info-circle me-1"></i> Klik tombol di bawah ini untuk meneruskan dana sebesar <strong>Rp {{ number_format($pesanan->total_harga * 0.95, 0, ',', '.') }}</strong> ke <strong>Dompet Jastiper</strong>. 
+                                                        <br>Jastiper baru bisa menarik uang tunai ke rekening mereka setelah Anda menyetujuinya di sini.
                                                     </div>
-                                                @enderror
-                                            </div>
 
-                                            <button type="submit" class="btn-lepas-dana"
-                                                onclick="return confirm('LEPAS DANA: Yakin ingin melepas dana Rp {{ number_format($pesanan->total_harga * 0.9, 0, ',', '.') }} ke Jastiper?')">
-                                                Lepas Dana
-                                            </button>
-                                        </form>
+                                                    <button type="submit" class="btn btn-success btn-sm w-100 fw-bold py-2">
+                                                        <i class="fa fa-check-circle me-1"></i> Teruskan ke Dompet Jastiper (Rp {{ number_format($pesanan->total_harga * 0.95, 0, ',', '.') }})
+                                                    </button>
+                                                </form>
+                                            </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </td>
-                            </tr>
-                        @endif
+                                @else
+                                    <div class="alert alert-warning mb-0" style="font-size: 0.875rem;">
+                                        <i class="fa fa-info-circle me-1"></i>
+                                        Dana pesanan ini masih <strong>TERTAHAN</strong> karena status pesanan saat ini adalah: 
+                                        <strong style="color: #d39e00;">{{ str_replace('_', ' ', $pesanan->status_pesanan) }}</strong>. 
+                                        Anda baru bisa melepaskan dana setelah pesanan diselesaikan.
+                                    </div>
+                                @endif
+                            </td>
+                        </tr>
 
                     @empty
                         <tr>
-                            <td colspan="8" class="empty-state">
-                                Tidak ada pesanan yang memerlukan tindakan Admin saat ini.
+                            <td colspan="4" class="empty-state">
+                                Saat ini tidak ada dana yang sedang ditahan di sistem.
                             </td>
                         </tr>
                     @endforelse
@@ -469,3 +303,51 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        $('.form-lepas-dana').on('submit', function(e) {
+            e.preventDefault();
+            var form = this;
+            
+            Swal.fire({
+                title: 'Konfirmasi Pelepasan Dana',
+                text: "Yakin ingin melepas dana ke rekening Jastiper? Pastikan Anda sudah mentransfernya ke rekening yang tertera.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Lepas Dana',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+
+        $('.form-tolak-dana').on('submit', function(e) {
+            e.preventDefault();
+            var form = this;
+            
+            Swal.fire({
+                title: 'Tolak Pencairan Dana?',
+                text: "Anda akan melaporkan bahwa rekening Jastiper bermasalah. Jastiper akan diminta memperbarui rekeningnya.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Tolak & Laporkan',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+</script>
+@endpush

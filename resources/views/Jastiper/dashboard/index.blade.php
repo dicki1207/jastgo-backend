@@ -147,7 +147,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0A68FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                 </div>
                 <div class="stat-text">
-                    <p class="stat-number">{{ $totalPesanan }}</p>
+                    <p class="stat-number count-up" data-target="{{ $totalPesanan }}">{{ $totalPesanan }}</p>
                     <p class="stat-label">Total Pesanan</p>
                 </div>
             </div>
@@ -159,7 +159,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0A68FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
                 </div>
                 <div class="stat-text">
-                    <p class="stat-number">{{ $pesananSelesai }}</p>
+                    <p class="stat-number count-up" data-target="{{ $pesananSelesai }}">{{ $pesananSelesai }}</p>
                     <p class="stat-label">Pesanan Selesai</p>
                 </div>
             </div>
@@ -171,7 +171,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0A68FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
                 </div>
                 <div class="stat-text">
-                    <p class="stat-number small-text">Rp{{ number_format($pendapatan, 0, ',', '.') }}</p>
+                    <p class="stat-number small-text count-up" data-target="{{ $pendapatan }}" data-prefix="Rp" data-is-currency="true">Rp{{ number_format($pendapatan, 0, ',', '.') }}</p>
                     <p class="stat-label">Pendapatan</p>
                 </div>
             </div>
@@ -183,7 +183,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0A68FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                 </div>
                 <div class="stat-text">
-                    <p class="stat-number">{{ $ulasan }}</p>
+                    <p class="stat-number count-up" data-target="{{ $ulasan }}">{{ $ulasan }}</p>
                     <p class="stat-label">Ulasan</p>
                 </div>
             </div>
@@ -470,4 +470,59 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // ... (Kode chart yang sudah ada tidak disentuh)
+            
+            /* ========================================================================= */
+            /* COUNT-UP ANIMATION UNTUK STAT KARTU ATAS */
+            /* ========================================================================= */
+            const counters = document.querySelectorAll('.count-up');
+            const speed = 100; // Pembagi kecepatan, makin kecil makin cepat
+            
+            counters.forEach(counter => {
+                const updateCount = () => {
+                    const target = +counter.getAttribute('data-target');
+                    if (isNaN(target) || target === 0) {
+                        const prefix = counter.getAttribute('data-prefix') || '';
+                        counter.innerText = prefix + '0';
+                        return;
+                    }
+
+                    const currentText = counter.innerText.replace(/[^0-9]/g, '');
+                    let current = currentText === '' ? 0 : +currentText;
+                    const inc = Math.max(1, Math.ceil(target / speed));
+
+                    if (current < target) {
+                        let nextValue = current + inc;
+                        if(nextValue > target) nextValue = target;
+
+                        const prefix = counter.getAttribute('data-prefix') || '';
+                        const isCurrency = counter.getAttribute('data-is-currency') === 'true';
+
+                        if(isCurrency) {
+                            counter.innerText = prefix + nextValue.toLocaleString('id-ID');
+                        } else {
+                            counter.innerText = prefix + nextValue;
+                        }
+                        setTimeout(updateCount, 15);
+                    } else {
+                        const prefix = counter.getAttribute('data-prefix') || '';
+                        const isCurrency = counter.getAttribute('data-is-currency') === 'true';
+                        if(isCurrency) {
+                            counter.innerText = prefix + target.toLocaleString('id-ID');
+                        } else {
+                            counter.innerText = prefix + target;
+                        }
+                    }
+                };
+                
+                // Initialize with 0
+                const prefix = counter.getAttribute('data-prefix') || '';
+                counter.innerText = prefix + '0';
+                
+                updateCount();
+            });
+        });
+    </script>
 @endpush

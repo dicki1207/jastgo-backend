@@ -64,10 +64,34 @@
             </select>
         </div>
 
-        {{-- foto_barang --}}
+        {{-- Foto Barang (Maksimal 3 Foto) --}}
         <div class="form-group">
-            <label class="form-label">Foto Barang (opsional)</label>
-            <input type="file" name="foto_barang" class="form-control">
+            <label class="form-label">Foto Barang (opsional, maks 3 foto)</label>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 10px;">
+                
+                {{-- FOTO 1 --}}
+                <div class="photo-upload-box">
+                    <label style="font-weight: 600; font-size: 0.9rem; color: #555;">Foto Utama</label>
+                    <input type="file" name="foto_barang" id="fotoInput1" class="form-control" accept=".jpg,.jpeg,.png">
+                    <div id="previewWrapper1" class="preview-wrapper"></div>
+                </div>
+
+                {{-- FOTO 2 --}}
+                <div class="photo-upload-box">
+                    <label style="font-weight: 600; font-size: 0.9rem; color: #555;">Foto Tambahan 1</label>
+                    <input type="file" name="foto_barang_2" id="fotoInput2" class="form-control" accept=".jpg,.jpeg,.png">
+                    <div id="previewWrapper2" class="preview-wrapper"></div>
+                </div>
+
+                {{-- FOTO 3 --}}
+                <div class="photo-upload-box">
+                    <label style="font-weight: 600; font-size: 0.9rem; color: #555;">Foto Tambahan 2</label>
+                    <input type="file" name="foto_barang_3" id="fotoInput3" class="form-control" accept=".jpg,.jpeg,.png">
+                    <div id="previewWrapper3" class="preview-wrapper"></div>
+                </div>
+
+            </div>
+            <small class="form-help">Format: jpg, jpeg, png. Ukuran maksimal 2MB per foto.</small>
         </div>
 
         {{-- tanggal_input --}}
@@ -85,3 +109,73 @@
     </form>
 </div>
 @endsection
+
+@push('styles')
+<style>
+    .photo-upload-box {
+        border: 2px dashed #ddd;
+        border-radius: 12px;
+        padding: 15px;
+        background: #fafafa;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .photo-upload-box:hover {
+        border-color: #006FFF;
+        background: #f0f7ff;
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 111, 255, 0.1);
+    }
+    .preview-wrapper {
+        margin-top: 5px;
+    }
+    .preview-wrapper img {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+</style>
+@endpush
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function setupImagePreview(inputId, previewId) {
+        const input = document.getElementById(inputId);
+        const preview = document.getElementById(previewId);
+
+        if (input) {
+            input.addEventListener('change', function () {
+                preview.innerHTML = '';
+                const file = this.files && this.files[0];
+                if (!file) return;
+                if (!file.type.startsWith('image/')) return;
+
+                const img = document.createElement('img');
+                img.alt = 'preview';
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    img.src = e.target.result;
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    }
+
+    setupImagePreview('fotoInput1', 'previewWrapper1');
+    setupImagePreview('fotoInput2', 'previewWrapper2');
+    setupImagePreview('fotoInput3', 'previewWrapper3');
+});
+</script>
+@endpush

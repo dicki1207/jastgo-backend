@@ -19,7 +19,19 @@ class PembayaranBerhasilDikonfirmasi extends Notification
 
     public function via($notifiable)
     {
-        return ['database']; 
+        return ['database', \App\Channels\FcmChannel::class]; 
+    }
+
+    public function toFcm($notifiable)
+    {
+        return [
+            'title' => 'Pembayaran Dikonfirmasi',
+            'body' => "Hore! Pembayaran untuk pesanan #" . $this->pesanan->invoice_number . " telah dikonfirmasi.",
+            'data' => [
+                'type' => 'pembayaran_dikonfirmasi',
+                'pesanan_id' => (string) $this->pesanan->id
+            ]
+        ];
     }
 
     public function toDatabase($notifiable)

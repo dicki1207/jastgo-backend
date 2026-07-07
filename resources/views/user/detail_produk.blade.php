@@ -55,7 +55,8 @@
         .main-image img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            background: white;
             border-radius: 16px;
         }
 
@@ -163,7 +164,8 @@
         .product-card .img img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            background: white;
         }
 
         .product-card .info {
@@ -190,16 +192,49 @@
         }
 
         @media (max-width: 768px) {
+            .container {
+                margin: 1rem auto;
+                padding: 0 1rem;
+            }
+
             .detail-layout {
                 flex-direction: column;
+                gap: 1rem;
             }
 
             .buttons-group {
                 flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .btn {
+                padding: 0.8rem 1.2rem;
+                font-size: 0.95rem;
             }
 
             .main-image {
-                height: 300px;
+                height: 250px;
+                border-radius: 12px;
+            }
+
+            .product-info h1 {
+                font-size: 1.6rem !important;
+                line-height: 1.3;
+            }
+
+            .price-text {
+                font-size: 1.5rem !important;
+            }
+
+            .box {
+                padding: 1.2rem;
+                border-radius: 12px;
+            }
+
+            .product-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 0.6rem;
+                margin-top: 1.5rem;
             }
         }
     </style>
@@ -221,15 +256,82 @@
 
         <div class="detail-layout">
             <div class="product-media">
-                <div class="main-image">
-                    @if ($barang->foto_barang)
-                        <img src="{{ asset('storage/' . $barang->foto_barang) }}" alt="{{ $barang->nama_barang }}">
+                <div class="main-image" style="position: relative;">
+                    @php
+                        $fotos = array_filter([$barang->foto_barang, $barang->foto_barang_2, $barang->foto_barang_3]);
+                        $fotos = array_values($fotos); // Reindex array
+                    @endphp
+                    
+                    <style>
+                        .fade-anim {
+                            animation: fadeEffect 0.5s ease-in-out;
+                        }
+                        @keyframes fadeEffect {
+                            from { opacity: 0; }
+                            to { opacity: 1; }
+                        }
+                    </style>
+
+                    @if (count($fotos) > 1)
+                        <div class="vanilla-carousel" style="width: 100%; height: 100%; position: relative;">
+                            @foreach($fotos as $index => $foto)
+                                <img src="{{ asset('storage/' . $foto) }}" class="carousel-slide" style="display: {{ $index === 0 ? 'block' : 'none' }}; width: 100%; height: 100%; object-fit: contain; background: white;" alt="{{ $barang->nama_barang }}">
+                            @endforeach
+                            
+                            <button onclick="changeSlide(-1)" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.3); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button onclick="changeSlide(1)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.3); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+
+                            <div style="position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px;">
+                                @foreach($fotos as $index => $foto)
+                                    <div class="carousel-dot" onclick="goToSlide({{ $index }})" style="width: 10px; height: 10px; border-radius: 50%; background: {{ $index === 0 ? 'var(--primary)' : 'rgba(0,0,0,0.3)' }}; cursor: pointer; transition: 0.3s;"></div>
+                                @endforeach
+                            </div>
+                        </div>
+                        <script>
+                            let currentSlide = 0;
+                            const slides = document.querySelectorAll('.carousel-slide');
+                            const dots = document.querySelectorAll('.carousel-dot');
+                            
+                            function changeSlide(direction) {
+                                let nextSlide = currentSlide + direction;
+                                if (nextSlide >= slides.length) nextSlide = 0;
+                                if (nextSlide < 0) nextSlide = slides.length - 1;
+                                goToSlide(nextSlide);
+                            }
+                            
+                            function goToSlide(index) {
+                                slides[currentSlide].style.display = 'none';
+                                slides[currentSlide].classList.remove('fade-anim');
+                                dots[currentSlide].style.background = 'rgba(0,0,0,0.3)';
+                                
+                                currentSlide = index;
+                                
+                                slides[currentSlide].style.display = 'block';
+                                // Trigger reflow to restart animation
+                                void slides[currentSlide].offsetWidth;
+                                slides[currentSlide].classList.add('fade-anim');
+                                dots[currentSlide].style.background = 'var(--primary)';
+                            }
+                        </script>
+                    @elseif(count($fotos) === 1)
+                        <img src="{{ asset('storage/' . $fotos[0]) }}" alt="{{ $barang->nama_barang }}" style="width: 100%; height: 100%; object-fit: contain; background: white;">
                     @else
-                        <div
-                            style="height:100%;display:flex;align-items:center;justify-content:center;color:#ddd;font-size:5rem;">
+                        <div style="height:100%;display:flex;align-items:center;justify-content:center;color:#ddd;font-size:5rem;">
                             <i class="fas fa-image"></i>
                         </div>
                     @endif
+                </div>
+                
+                {{-- Deskripsi Produk dipindah ke bawah gambar --}}
+                <div class="box" style="margin-top: 1.5rem;">
+                    <h3 style="color:var(--primary);margin-bottom:0.5rem;">Deskripsi Produk</h3>
+                    <p style="white-space:pre-wrap;line-height:1.7;color:#444;">
+                        {{ $barang->deskripsi ?? 'Deskripsi belum tersedia.' }}
+                    </p>
                 </div>
             </div>
 
@@ -242,6 +344,9 @@
                             style="width:56px;height:56px;border-radius:50%;overflow:hidden;background:#006FFF;display:flex;align-items:center;justify-content:center;">
                             @if ($barang->jastiper && $barang->jastiper->profile_toko)
                                 <img src="{{ asset('storage/' . $barang->jastiper->profile_toko) }}"
+                                    style="width:100%;height:100%;object-fit:cover;">
+                            @elseif ($barang->jastiper && $barang->jastiper->user && $barang->jastiper->user->avatar)
+                                <img src="{{ $barang->jastiper->user->avatar }}"
                                     style="width:100%;height:100%;object-fit:cover;">
                             @else
                                 <i class="fas fa-store" style="color:white;font-size:1.6rem;"></i>
@@ -271,13 +376,6 @@
                             Rp {{ number_format($barang->harga ?? 0, 0, ',', '.') }}
                         </p>
                     </div>
-                </div>
-
-                <div class="box">
-                    <h3 style="color:var(--primary);margin-bottom:0.5rem;">Deskripsi Produk</h3>
-                    <p style="white-space:pre-wrap;line-height:1.7;color:#444;">
-                        {{ $barang->deskripsi ?? 'Deskripsi belum tersedia.' }}
-                    </p>
                 </div>
 
                 <div class="box">

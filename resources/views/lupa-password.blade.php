@@ -193,7 +193,7 @@
         <h1>LUPA PASSWORD</h1>
         <div class="brand-name">JastGo</div>
         <p class="tagline">
-            Masukkan email dan password baru untuk mengatur ulang password.
+            Masukkan email Anda untuk menerima kode OTP keamanan.
         </p>
     </div>
 
@@ -220,21 +220,11 @@
 
                 <div class="form-group">
                     <label class="form-label">Email</label>
-                    <input type="email" name="email" class="form-input" required>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Password Baru</label>
-                    <input type="password" name="password" class="form-input" required>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Konfirmasi Password</label>
-                    <input type="password" name="password_confirmation" class="form-input" required>
+                    <input type="email" name="email" class="form-input" required placeholder="Masukkan email terdaftar">
                 </div>
 
                 <button type="submit" class="btn-submit">
-                    Reset Password
+                    Kirim Kode OTP
                 </button>
 
                 <div class="link-text">

@@ -15,13 +15,17 @@ class Pesanan extends Model
     protected $fillable = [
         'user_id',
         'jastiper_id',
+        'invoice_number',
         'tanggal_pesan',
         'total_harga',
+        'biaya_layanan',
         'status_pesanan',
         'status_dana_jastiper', 
         'alamat_pengiriman',
         'no_hp',
         'catatan',
+        'no_resi',
+        'snap_token',
     ];
 
     protected $casts = [
@@ -64,5 +68,15 @@ class Pesanan extends Model
     {
         return $this->hasOne(AlurDana::class, 'pesanan_id')
                     ->where('jenis_transaksi', 'PELEPASAN_DANA');
+    }
+
+    public function pembayarans(): HasMany
+    {
+        return $this->hasMany(Pembayaran::class, 'pesanan_id');
+    }
+
+    public function komplain(): HasOne
+    {
+        return $this->hasOne(Komplain::class, 'pesanan_id');
     }
 }

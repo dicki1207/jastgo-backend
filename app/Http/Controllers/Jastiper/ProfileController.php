@@ -37,6 +37,8 @@ class ProfileController extends Controller
         $request->validate([
             'nama_toko'       => 'required|string|max:100',
             'no_hp'           => 'nullable|string|max:30',
+            'kota_toko'       => 'required|string|max:100',
+            'alamat_toko'     => 'required|string',
             'jangkauan'       => 'nullable|string',
             'tipe_rekening'   => 'nullable|in:bank,e-wallet',
             'nama_penyedia'   => 'nullable|string|max:100',
@@ -68,36 +70,13 @@ class ProfileController extends Controller
         // ==== DATA UTAMA JASTIPER ====
         $jastiper->nama_toko = $request->nama_toko;
         $jastiper->no_hp     = $request->no_hp;
+        $jastiper->kota_toko = $request->kota_toko;
+        $jastiper->alamat_toko = $request->alamat_toko;
         $jastiper->jangkauan = $request->jangkauan;
         $jastiper->save(); 
 
-        // ==== LOGIKA REKENING (PERBAIKAN DISINI) ====
-        $rekening = $jastiper->rekening;
-
-        $rekeningData = $request->only([
-            'tipe_rekening', 'nama_penyedia', 'nama_pemilik', 'nomor_akun'
-        ]);
-
-        // Cek jika user mengisi setidaknya satu kolom rekening
-        if (array_filter($rekeningData)) {
-            
-            if ($rekening) {
-                // KASUS 1: Rekening sudah ada sebelumnya -> Update saja
-                $rekening->update($rekeningData);
-            } else {
-                // KASUS 2: Rekening belum ada -> Buat Baru & Hubungkan
-                
-                // 1. Buat data rekening baru
-                $newRekening = Auth::user()->rekenings()->create($rekeningData);
-
-                // 2. Hubungkan Jastiper ke Rekening baru tersebut (PENTING!)
-                $jastiper->rekening_id = $newRekening->id;
-                $jastiper->save();
-            }
-        }
-
         return redirect()
             ->route('jastiper.profile.index')
-            ->with('success', 'Profil berhasil diperbarui!');
+            ->with('success', 'Profil Jastiper berhasil diperbarui!');
     }
 }

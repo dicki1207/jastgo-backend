@@ -8,7 +8,7 @@ class DetailPesanan extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['pesanan_id','barang_id','jumlah','subtotal'];
+    protected $fillable = ['pesanan_id','barang_id','jumlah','subtotal','varian'];
 
     protected $casts = [
         'jumlah' => 'integer',

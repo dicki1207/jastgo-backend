@@ -146,6 +146,18 @@
                 <label for="jangkauan">Jangkauan/Area Layanan (Kota/Provinsi)</label>
                 <input type="text" id="jangkauan" name="jangkauan" value="{{ old('jangkauan') }}" required placeholder="Contoh: Area Jakarta Selatan, Seluruh Jawa Tengah">
             </div>
+
+            <h3 style="color: #4b5563; margin-top: 2rem; margin-bottom: 1.5rem;"><i class="fas fa-map-marker-alt"></i> Alamat Toko</h3>
+            
+            <div class="form-group">
+                <label for="kota_toko">Kota Toko/Domisili Jastiper</label>
+                <input type="text" id="kota_toko" name="kota_toko" value="{{ old('kota_toko') }}" required placeholder="Contoh: Jakarta Selatan">
+            </div>
+
+            <div class="form-group">
+                <label for="alamat_toko">Alamat Lengkap Toko</label>
+                <textarea id="alamat_toko" name="alamat_toko" rows="3" required placeholder="Contoh: Jl. Sudirman No. 1, Jakarta Selatan. Alamat ini akan digunakan sebagai titik asal pengiriman.">{{ old('alamat_toko') }}</textarea>
+            </div>
             
 
             <h3 style="color: #4b5563; margin-top: 2rem; margin-bottom: 1.5rem;"><i class="fas fa-wallet"></i> Rekening Pembayaran</h3>

@@ -7,9 +7,8 @@
 @push('styles')
 <link rel="stylesheet" href="{{ asset('admin/assets/css/custom-user_table.css') }}">
 @endpush
-
 @section('content')
-<div class="user-table-card">
+<div class="user-table-card" style="max-width: 1100px;">
 
     <h2 class="user-table-title">Log Aktivitas</h2>
 

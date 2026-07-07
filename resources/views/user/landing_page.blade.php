@@ -161,16 +161,55 @@
 
         /* Responsive */
         @media (max-width: 768px) {
+            .filter-section {
+                padding: 0.6rem 1rem;
+            }
+            .filter-container select {
+                font-size: 13px !important; /* Paksa ukuran font kecil di HP */
+                padding: 0.4rem 0.8rem;
+                border-radius: 6px;
+                width: auto;
+                max-width: 100%;
+                height: auto;
+            }
+            .filter-container select option {
+                font-size: 13px; /* Mengecilkan teks di dalam popup dropdown */
+                padding: 4px;
+            }
+
+            .hero {
+                padding: 2rem 1rem; /* Kurangi padding hero di mobile */
+            }
             .hero h1 {
-                font-size: 1.8rem;
+                font-size: 1.4rem;
+                margin-bottom: 0.5rem;
             }
 
             .hero p {
-                font-size: 1rem;
+                font-size: 0.85rem;
+                margin-bottom: 1.2rem;
+            }
+            
+            .container {
+                padding: 0 1rem;
             }
 
             .product-grid {
-                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 0.8rem;
+            }
+            
+            .discount-badge {
+                padding: 0.5rem 1rem;
+                border-radius: 8px;
+                display: block;
+                margin: 0 auto;
+                max-width: 90%;
+            }
+            
+            .discount-badge .big {
+                font-size: 1.1rem;
+                margin-bottom: 0;
             }
         }
     </style>

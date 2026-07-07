@@ -14,17 +14,43 @@ class Jastiper extends Model
         'user_id',
         'nama_toko',
         'no_hp',
+        'kota_toko',
+        'alamat_toko',
         'jangkauan',      
         'rating',
         'tanggal_daftar',
         'rekening_id',    
-        'profile_toko'
+        'profile_toko',
+        'deskripsi_toko',
+        'foto_cover'
     ];
+
+    protected $withCount = ['followers'];
+    protected $appends = ['is_followed'];
 
     protected $casts = [
         'rating' => 'decimal:1',
         'tanggal_daftar' => 'datetime',
     ];
+
+    public function getProfileTokoAttribute($value)
+    {
+        return $value ? asset('storage/' . $value) : null;
+    }
+
+    public function getFotoCoverAttribute($value)
+    {
+        return $value ? asset('storage/' . $value) : null;
+    }
+
+    public function getIsFollowedAttribute()
+    {
+        if (!auth()->check()) {
+            return false;
+        }
+
+        return $this->followers()->where('user_id', auth()->id())->exists();
+    }
 
     public function user()
     {
@@ -42,9 +68,14 @@ class Jastiper extends Model
     }
     
     public function followers()
-{
-    return $this->hasMany(JastiperFollower::class);
-}
+    {
+        return $this->hasMany(JastiperFollower::class);
+    }
+
+    public function ulasans()
+    {
+        return $this->hasMany(Ulasan::class);
+    }
 
 
 

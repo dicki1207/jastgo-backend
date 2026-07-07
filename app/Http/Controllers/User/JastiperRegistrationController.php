@@ -40,6 +40,8 @@ class JastiperRegistrationController extends Controller
         $request->validate([
             'nama_toko' => 'required|string|max:100|unique:jastipers,nama_toko',
             'no_hp' => 'required|string|max:30|unique:jastipers,no_hp',
+            'kota_toko' => 'required|string|max:100',
+            'alamat_toko' => 'required|string',
             'jangkauan' => 'required|string|max:255',
             'profile_toko_desc' => 'nullable|string', 
             'profile_toko' => 'nullable|image|max:2048', 
@@ -72,6 +74,8 @@ class JastiperRegistrationController extends Controller
                 'user_id' => $user->id,
                 'nama_toko' => $request->nama_toko,
                 'no_hp' => $request->no_hp,
+                'kota_toko' => $request->kota_toko,
+                'alamat_toko' => $request->alamat_toko,
                 'jangkauan' => $request->jangkauan,
                 'rekening_id' => $rekening->id, 
                 'profile_toko' => $path, 

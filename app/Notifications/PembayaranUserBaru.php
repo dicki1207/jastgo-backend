@@ -19,9 +19,20 @@ class PembayaranUserBaru extends Notification
 
     public function via($notifiable)
     {
-        return ['database']; // Dikirim ke tabel notifications
+        return ['database', \App\Channels\FcmChannel::class]; // Dikirim ke tabel notifications
     }
 
+        public function toFcm($notifiable)
+    {
+        $data = $this->toDatabase($notifiable);
+        return [
+            'title' => $data['jenis_notifikasi'] ?? 'Notifikasi JastGo',
+            'body' => strip_tags($data['pesan'] ?? 'Anda memiliki pemberitahuan baru.'),
+            'data' => [
+                'type' => 'system_notification'
+            ]
+        ];
+    }
     public function toDatabase($notifiable)
     {
         $totalHarga = number_format($this->pesanan->total_harga, 0, ',', '.');

@@ -24,31 +24,143 @@
     <form action="{{ route('admin.rekening.store') }}" method="POST" autocomplete="off">
         @csrf
 
-        {{-- Field: user_id (Input User ID) --}}
-        <div class="form-group">
-            <label class="form-label">User ID Pemilik Rekening <span class="text-danger">*</span></label>
-            {{-- Admin perlu menginput User ID yang valid --}}
-            <input type="number" name="user_id" value="{{ old('user_id') }}" class="form-control" required placeholder="Contoh: 123">
-            @error('user_id') <div class="text-danger">{{ $message }}</div> @enderror
-        </div>
+
+        {{-- Tipe Rekening disembunyikan dan diset via JS berdasarkan pilihan penyedia --}}
+        <input type="hidden" name="tipe_rekening" id="tipe_rekening" value="{{ old('tipe_rekening') }}">
         
-        {{-- Field: tipe_rekening (Enum/Select) --}}
+        <style>
+            .bank-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+            .bank-card {
+                border: 2px solid #eee;
+                border-radius: 8px;
+                padding: 15px;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.2s;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                background: #fff;
+            }
+            .bank-card:hover {
+                border-color: #C1E0F4;
+                background: #f8fbff;
+            }
+            .bank-card img {
+                height: 30px;
+                max-width: 100px;
+                object-fit: contain;
+            }
+            .bank-card input[type="radio"] {
+                display: none;
+            }
+            .bank-card input[type="radio"]:checked + .bank-content {
+                font-weight: bold;
+                color: #006FFF;
+            }
+            /* When input is checked, style the parent label */
+            .bank-card:has(input[type="radio"]:checked) {
+                border-color: #006FFF;
+                background: #f0f8ff;
+                box-shadow: 0 0 0 2px rgba(0, 111, 255, 0.2);
+            }
+            .section-label {
+                font-size: 1rem;
+                font-weight: 600;
+                margin-bottom: 10px;
+                color: #555;
+            }
+        </style>
+
         <div class="form-group">
-            <label class="form-label">Tipe Rekening <span class="text-danger">*</span></label>
-            <select name="tipe_rekening" class="form-control" required>
-                <option value="" disabled selected>Pilih Tipe</option>
-                <option value="bank" {{ old('tipe_rekening') == 'bank' ? 'selected' : '' }}>Bank</option>
-                <option value="e-wallet" {{ old('tipe_rekening') == 'e-wallet' ? 'selected' : '' }}>E-Wallet</option>
-            </select>
-            @error('tipe_rekening') <div class="text-danger">{{ $message }}</div> @enderror
+            <label class="form-label">Pilih Penyedia Bank / E-Wallet <span class="text-danger">*</span></label>
+            @error('nama_penyedia') <div class="text-danger" style="margin-bottom: 10px;">{{ $message }}</div> @enderror
+            @error('tipe_rekening') <div class="text-danger" style="margin-bottom: 10px;">{{ $message }}</div> @enderror
+            
+            <div class="section-label"><i class="fas fa-university"></i> Transfer Bank (Virtual Account)</div>
+            <div class="bank-grid">
+                <label class="bank-card" onclick="setTipe('bank')">
+                    <input type="radio" name="nama_penyedia" value="BCA" {{ old('nama_penyedia') == 'BCA' ? 'checked' : '' }} required>
+                    <div class="bank-content">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Bank_Central_Asia.svg" alt="BCA">
+                        <div>BCA</div>
+                    </div>
+                </label>
+                <label class="bank-card" onclick="setTipe('bank')">
+                    <input type="radio" name="nama_penyedia" value="BNI" {{ old('nama_penyedia') == 'BNI' ? 'checked' : '' }}>
+                    <div class="bank-content">
+                        <img src="https://upload.wikimedia.org/wikipedia/id/5/55/BNI_logo.svg" alt="BNI">
+                        <div>BNI</div>
+                    </div>
+                </label>
+                <label class="bank-card" onclick="setTipe('bank')">
+                    <input type="radio" name="nama_penyedia" value="BRI" {{ old('nama_penyedia') == 'BRI' ? 'checked' : '' }}>
+                    <div class="bank-content">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/2/2e/BRI_2020.svg" alt="BRI">
+                        <div>BRI</div>
+                    </div>
+                </label>
+                <label class="bank-card" onclick="setTipe('bank')">
+                    <input type="radio" name="nama_penyedia" value="Mandiri" {{ old('nama_penyedia') == 'Mandiri' ? 'checked' : '' }}>
+                    <div class="bank-content">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/a/ad/Bank_Mandiri_logo_2016.svg" alt="Mandiri">
+                        <div>Mandiri</div>
+                    </div>
+                </label>
+                <label class="bank-card" onclick="setTipe('bank')">
+                    <input type="radio" name="nama_penyedia" value="Permata" {{ old('nama_penyedia') == 'Permata' ? 'checked' : '' }}>
+                    <div class="bank-content">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/38/PermataBank_logo.svg" alt="Permata">
+                        <div>Permata</div>
+                    </div>
+                </label>
+            </div>
+
+            <div class="section-label mt-4"><i class="fas fa-wallet"></i> E-Wallet & QRIS</div>
+            <div class="bank-grid">
+                <label class="bank-card" onclick="setTipe('e-wallet')">
+                    <input type="radio" name="nama_penyedia" value="GoPay" {{ old('nama_penyedia') == 'GoPay' ? 'checked' : '' }}>
+                    <div class="bank-content">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg" alt="GoPay">
+                        <div>GoPay</div>
+                    </div>
+                </label>
+                <label class="bank-card" onclick="setTipe('e-wallet')">
+                    <input type="radio" name="nama_penyedia" value="OVO" {{ old('nama_penyedia') == 'OVO' ? 'checked' : '' }}>
+                    <div class="bank-content">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Logo_ovo_purple.svg" alt="OVO">
+                        <div>OVO</div>
+                    </div>
+                </label>
+                <label class="bank-card" onclick="setTipe('e-wallet')">
+                    <input type="radio" name="nama_penyedia" value="DANA" {{ old('nama_penyedia') == 'DANA' ? 'checked' : '' }}>
+                    <div class="bank-content">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg" alt="DANA">
+                        <div>DANA</div>
+                    </div>
+                </label>
+                <label class="bank-card" onclick="setTipe('e-wallet')">
+                    <input type="radio" name="nama_penyedia" value="ShopeePay" {{ old('nama_penyedia') == 'ShopeePay' ? 'checked' : '' }}>
+                    <div class="bank-content">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/f/fe/Shopee.svg" alt="ShopeePay" style="height: 25px;">
+                        <div>ShopeePay</div>
+                    </div>
+                </label>
+            </div>
         </div>
 
-        {{-- Field: nama_penyedia --}}
-        <div class="form-group">
-            <label class="form-label">Nama Penyedia (Bank/E-Wallet) <span class="text-danger">*</span></label>
-            <input type="text" name="nama_penyedia" value="{{ old('nama_penyedia') }}" class="form-control" required maxlength="100" placeholder="Contoh: BCA / DANA">
-            @error('nama_penyedia') <div class="text-danger">{{ $message }}</div> @enderror
-        </div>
+        <script>
+            function setTipe(tipe) {
+                document.getElementById('tipe_rekening').value = tipe;
+            }
+        </script>
 
         {{-- Field: nama_pemilik --}}
         <div class="form-group">

@@ -19,10 +19,15 @@ class UlasanController extends Controller
 
         if ($q) {
             $query->where(function($w) use ($q) {
-                $w->where('komentar', 'like', "%{$q}%")
-                  ->orWhere('rating', $q)
+                $w->where('id', $q)
+                  ->orWhere('pesanan_id', $q)
+                  ->orWhere('komentar', 'like', "%{$q}%")
                   ->orWhereHas('user', fn($u)=> $u->where('name', 'like', "%{$q}%"))
                   ->orWhereHas('jastiper', fn($j)=> $j->where('nama_toko', 'like', "%{$q}%"));
+                  
+                if (is_numeric($q)) {
+                    $w->orWhere('rating', $q);
+                }
             });
         }
 

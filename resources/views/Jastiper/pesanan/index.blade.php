@@ -102,10 +102,10 @@
 
 
     {{-- SEARCH + TOTAL --}}
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div class="user-controls" style="display:flex; align-items:center; gap:8px;">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-3" style="gap: 15px;">
+        <div class="user-controls w-100" style="display:flex; flex-wrap:wrap; align-items:center; gap:8px; justify-content: space-between;">
             <form method="GET" action="{{ route('jastiper.pesanan.index') }}"
-                style="display:flex; gap:8px; align-items:center;">
+                style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; flex-grow:1;">
 
                 {{-- Pertahankan filter status saat mencari --}}
                 @foreach((array) $status as $s)
@@ -114,7 +114,7 @@
 
                 <input name="q" value="{{ request('q', $q ?? '') }}" class="user-search-input" type="text"
                     placeholder="Cari berdasarkan ID / No HP / Alamat"
-                    style="padding:8px 12px; border:1px solid #DDE0E3; border-radius:8px; width:320px;"
+                    style="padding:8px 12px; border:1px solid #DDE0E3; border-radius:8px; flex-grow:1; min-width: 200px; max-width: 400px;"
                     autocomplete="off">
 
                 <button type="submit" class="btn-search"
@@ -130,14 +130,14 @@
                 @endif
             </form>
 
-            <div style="margin-left:8px; color:#6c7680;">
+            <div style="color:#6c7680; white-space: nowrap;">
                 Total: <strong>{{ $pesanans->total() }}</strong>
             </div>
         </div>
     </div>
 
     {{-- TAB NAVIGASI STATUS --}}
-    <ul class="nav nav-tabs mb-3">
+    <ul class="nav nav-tabs mb-3 flex-wrap" style="gap: 5px;">
         @php
         $statusArray = array_map('strtoupper', (array) $status); // Pastikan status di-uppercase untuk perbandingan
         $isDiprosesActive = (count($statusArray) === 1 && in_array('DIPROSES', $statusArray));
@@ -204,21 +204,20 @@
                     <td class="col-actions" style="text-align:right;">
                         <div class="table-actions" style="display:flex; justify-content:flex-end; gap:5px;">
 
-                            {{-- Tombol Lihat Detail (Diperlukan untuk memicu modal)
+                            {{-- Tombol Lihat Detail (Diperlukan untuk memicu modal) --}}
                             <button type="button" class="btn-detail view-detail" data-id="{{ $p->id }}" data-toggle="modal" data-target="#pesananDetailModal" title="Lihat Detail Pesanan">
                                 Detail
-                            </button> --}}
+                            </button>
                             
                             {{-- Tombol Ubah Status (Hanya muncul jika DIPROSES) --}}
                             @if (strtoupper($p->status_pesanan) == 'DIPROSES')
                             {{-- Menggunakan rute baru updateStatusToSiapDikirim --}}
                             <form action="{{ route('jastiper.pesanan.update.siap.kirim', $p) }}" method="POST"
-                                style="display:inline;">
+                                style="display:inline;" class="form-siap-kirim">
                                 @csrf
                                 @method('PUT')
 
-                                <button type="submit" class="btn-kirim" title="Ubah ke Siap Dikirim"
-                                    onclick="return confirm('Apakah Anda yakin pesanan #{{ $p->id }} sudah siap dikirim? Status akan berubah menjadi DIKIRIM. Tindakan ini tidak bisa dibatalkan.')">
+                                <button type="button" class="btn-kirim btn-siap-kirim" title="Ubah ke Siap Dikirim" data-id="{{ $p->id }}">
                                     Siap Kirim
                                 </button>
                             </form>
@@ -253,19 +252,20 @@
                     <p>Memuat data...</p>
                 </div>
                 <div id="detail-content" style="display:none;">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Informasi Utama</h6>
-                            <p><strong>Pemesan:</strong> <span id="detail-pemesan"></span></p>
-                            <p><strong>Tanggal Pesan:</strong> <span id="detail-tanggal"></span></p>
-                            <p><strong>Total Harga:</strong> <span id="detail-total-harga"></span></p>
-                            <p><strong>Status Pesanan:</strong> <span id="detail-status"></span></p>
-                            <p><strong>Status Dana Jastiper:</strong> <span id="detail-status-dana"></span></p>
+                    <div class="row" style="word-wrap: break-word; overflow-wrap: break-word;">
+                        <div class="col-md-6 mb-3">
+                            <h6 class="font-weight-bold" style="border-bottom: 1px solid #eee; padding-bottom: 8px;">Informasi Utama</h6>
+                            <p class="mb-1"><strong>Pemesan:</strong> <br> <span id="detail-pemesan"></span></p>
+                            <p class="mb-1"><strong>Tanggal Pesan:</strong> <br> <span id="detail-tanggal"></span></p>
+                            <p class="mb-1"><strong>Total Harga:</strong> <br> <span id="detail-total-harga" class="text-primary font-weight-bold"></span></p>
+                            <p class="mb-1"><strong>Status Pesanan:</strong> <br> <span id="detail-status" class="badge badge-info"></span></p>
+                            <p class="mb-0"><strong>Status Dana Jastiper:</strong> <br> <span id="detail-status-dana" class="badge badge-secondary"></span></p>
                         </div>
-                        <div class="col-md-6">
-                            <h6>Pengiriman</h6>
-                            <p><strong>No. HP:</strong> <span id="detail-no-hp"></span></p>
-                            <p><strong>Alamat:</strong> <span id="detail-alamat"></span></p>
+                        <div class="col-md-6 mb-3">
+                            <h6 class="font-weight-bold" style="border-bottom: 1px solid #eee; padding-bottom: 8px;">Pengiriman</h6>
+                            <p class="mb-1"><strong>No. HP:</strong> <br> <span id="detail-no-hp"></span></p>
+                            <p class="mb-1"><strong>Alamat:</strong> <br> <span id="detail-alamat"></span></p>
+                            <p class="mb-0"><strong>Catatan untuk Penjual:</strong> <br> <span id="detail-catatan" class="text-danger"></span></p>
                         </div>
                     </div>
 
@@ -303,6 +303,9 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
+        // Pindahkan modal ke body agar tidak terpengaruh z-index / transform dari container parent
+        $('#pesananDetailModal').appendTo("body");
+
         // Fungsi number_format sederhana (menggunakan format Rupiah Indonesia)
         function number_format(number, decimals, decPoint, thousandsSep) {
             number = (number + '').replace(/[^0-9+\-Ee.]/g, '');
@@ -361,6 +364,7 @@
                     $('#detail-status-dana').text(formatStatus(data.status_dana_jastiper));
                     $('#detail-no-hp').text(data.no_hp ?? '-');
                     $('#detail-alamat').text(data.alamat_pengiriman ?? '-');
+                    $('#detail-catatan').text(data.catatan ?? '-');
 
                     // --- Mengisi Detail Barang ---
                     var barangHtml = '';
@@ -401,6 +405,37 @@
                             ?.error || 'Terjadi kesalahan server.') + '</p>'
                     );
                     $('#detail-content').show();
+                }
+            });
+        });
+
+        // Auto-open detail if open_detail query parameter is present
+        @if(request()->has('open_detail'))
+            var detailIdToOpen = "{{ request('open_detail') }}";
+            // Wait a little bit for DOM to be ready just in case
+            setTimeout(function() {
+                $('.view-detail[data-id="' + detailIdToOpen + '"]').trigger('click');
+            }, 100);
+        @endif
+        // Handler untuk tombol "Siap Kirim" menggunakan SweetAlert2
+        $('.btn-siap-kirim').on('click', function(e) {
+            e.preventDefault();
+            var form = $(this).closest('form');
+            var pesananId = $(this).data('id');
+
+            Swal.fire({
+                title: 'Apakah Anda Yakin?',
+                text: "Pesanan #" + pesananId + " sudah siap dikirim? Status akan berubah menjadi DIKIRIM. Tindakan ini tidak bisa dibatalkan.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Siap Kirim!',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
                 }
             });
         });

@@ -51,14 +51,31 @@ class NotifikasiController extends Controller
     /**
      * Menandai satu notifikasi sebagai sudah dibaca.
      */
-    public function markAsRead(DatabaseNotification $notification)
+    public function markAsRead(Request $request, DatabaseNotification $notification)
     {
+        $user = Auth::user();
+        $isOwner = false;
+
+        // Cek kepemilikan berdasarkan tipe notifiable
+        if ($notification->notifiable_type === 'App\Models\User' && $notification->notifiable_id == $user->id) {
+            $isOwner = true;
+        } elseif ($notification->notifiable_type === 'App\Models\Jastiper' && $user->jastiper && $notification->notifiable_id == $user->jastiper->id) {
+            $isOwner = true;
+        }
+
         // Validasi kepemilikan notifikasi (Security check)
-        if ($notification->notifiable_id != Auth::id()) {
+        if (!$isOwner) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['error' => 'Akses ditolak.'], 403);
+            }
             abort(403, 'Akses ditolak.');
         }
         
         $notification->markAsRead();
+        
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Notifikasi berhasil ditandai sudah dibaca.']);
+        }
         return back()->with('success', 'Notifikasi berhasil ditandai sudah dibaca.');
     }
 
@@ -67,10 +84,21 @@ class NotifikasiController extends Controller
     /**
      * Menandai semua notifikasi sebagai sudah dibaca.
      */
-    public function markAllAsRead()
+    public function markAllAsRead(Request $request)
     {
-        // Menandai semua notifikasi yang belum dibaca milik user ini sebagai sudah dibaca
-        Auth::user()->unreadNotifications->markAsRead();
+        $user = Auth::user();
+
+        if ($user->role === 'admin') {
+            $user->unreadNotifications->markAsRead();
+        } elseif ($user->role === 'jastiper' && $user->jastiper) {
+            $user->jastiper->unreadNotifications->markAsRead();
+        } else {
+            $user->unreadNotifications->markAsRead();
+        }
+        
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Semua notifikasi berhasil ditandai sudah dibaca.']);
+        }
         return back()->with('success', 'Semua notifikasi berhasil ditandai sudah dibaca.');
     }
     
@@ -81,8 +109,17 @@ class NotifikasiController extends Controller
      */
     public function destroy(DatabaseNotification $notification)
     {
+        $user = Auth::user();
+        $isOwner = false;
+
+        if ($notification->notifiable_type === 'App\Models\User' && $notification->notifiable_id == $user->id) {
+            $isOwner = true;
+        } elseif ($notification->notifiable_type === 'App\Models\Jastiper' && $user->jastiper && $notification->notifiable_id == $user->jastiper->id) {
+            $isOwner = true;
+        }
+
         // Validasi kepemilikan notifikasi (Security check)
-        if ($notification->notifiable_id != Auth::id()) {
+        if (!$isOwner) {
             abort(403, 'Akses ditolak.');
         }
         

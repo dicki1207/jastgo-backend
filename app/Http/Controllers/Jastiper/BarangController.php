@@ -65,14 +65,21 @@ class BarangController extends Controller
             'stok' => 'required|integer|min:0',
             'is_available' => ['required', Rule::in(['yes', 'no'])],
             'foto_barang' => 'nullable|image|max:2048',
+            'foto_barang_2' => 'nullable|image|max:2048',
+            'foto_barang_3' => 'nullable|image|max:2048',
             'tanggal_input' => 'nullable|date',
         ]);
 
         $data['jastiper_id'] = $jastiper->id;
 
         if ($request->hasFile('foto_barang')) {
-            $path = $request->file('foto_barang')->store('barangs', 'public');
-            $data['foto_barang'] = $path;
+            $data['foto_barang'] = $request->file('foto_barang')->store('barangs', 'public');
+        }
+        if ($request->hasFile('foto_barang_2')) {
+            $data['foto_barang_2'] = $request->file('foto_barang_2')->store('barangs', 'public');
+        }
+        if ($request->hasFile('foto_barang_3')) {
+            $data['foto_barang_3'] = $request->file('foto_barang_3')->store('barangs', 'public');
         }
 
         $barang = Barang::create($data);
@@ -109,14 +116,49 @@ class BarangController extends Controller
             'stok' => 'required|integer|min:0',
             'is_available' => ['required', Rule::in(['yes', 'no'])],
             'foto_barang' => 'nullable|image|max:2048',
+            'foto_barang_2' => 'nullable|image|max:2048',
+            'foto_barang_3' => 'nullable|image|max:2048',
             'tanggal_input' => 'nullable|date',
         ]);
 
+        // Proses remove foto
+        if ($request->remove_foto) {
+            if ($barang->foto_barang && Storage::disk('public')->exists($barang->foto_barang)) {
+                Storage::disk('public')->delete($barang->foto_barang);
+            }
+            $data['foto_barang'] = null;
+        }
+        if ($request->remove_foto_2) {
+            if ($barang->foto_barang_2 && Storage::disk('public')->exists($barang->foto_barang_2)) {
+                Storage::disk('public')->delete($barang->foto_barang_2);
+            }
+            $data['foto_barang_2'] = null;
+        }
+        if ($request->remove_foto_3) {
+            if ($barang->foto_barang_3 && Storage::disk('public')->exists($barang->foto_barang_3)) {
+                Storage::disk('public')->delete($barang->foto_barang_3);
+            }
+            $data['foto_barang_3'] = null;
+        }
+
+        // Proses upload foto baru
         if ($request->hasFile('foto_barang')) {
             if ($barang->foto_barang && Storage::disk('public')->exists($barang->foto_barang)) {
                 Storage::disk('public')->delete($barang->foto_barang);
             }
             $data['foto_barang'] = $request->file('foto_barang')->store('barangs', 'public');
+        }
+        if ($request->hasFile('foto_barang_2')) {
+            if ($barang->foto_barang_2 && Storage::disk('public')->exists($barang->foto_barang_2)) {
+                Storage::disk('public')->delete($barang->foto_barang_2);
+            }
+            $data['foto_barang_2'] = $request->file('foto_barang_2')->store('barangs', 'public');
+        }
+        if ($request->hasFile('foto_barang_3')) {
+            if ($barang->foto_barang_3 && Storage::disk('public')->exists($barang->foto_barang_3)) {
+                Storage::disk('public')->delete($barang->foto_barang_3);
+            }
+            $data['foto_barang_3'] = $request->file('foto_barang_3')->store('barangs', 'public');
         }
 
         $barang->update($data);
@@ -134,6 +176,13 @@ class BarangController extends Controller
         if ($barang->foto_barang && Storage::disk('public')->exists($barang->foto_barang)) {
             Storage::disk('public')->delete($barang->foto_barang);
         }
+        if ($barang->foto_barang_2 && Storage::disk('public')->exists($barang->foto_barang_2)) {
+            Storage::disk('public')->delete($barang->foto_barang_2);
+        }
+        if ($barang->foto_barang_3 && Storage::disk('public')->exists($barang->foto_barang_3)) {
+            Storage::disk('public')->delete($barang->foto_barang_3);
+        }
+        
         $barang->delete();
 
         return redirect()->route('jastiper.barang.index')->with('success', 'Barang dihapus.');

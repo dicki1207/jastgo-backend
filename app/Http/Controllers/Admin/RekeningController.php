@@ -49,18 +49,16 @@ class RekeningController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'user_id' => 'required|exists:users,id', // Pastikan user_id valid
             'tipe_rekening' => ['required', Rule::in(['bank', 'e-wallet'])], 
             'nama_penyedia' => 'required|string|max:100',
             'nama_pemilik' => 'required|string|max:100',
-            'nomor_akun' => 'required|string|max:50|unique:rekenings,nomor_akun,NULL,id,user_id,' . $request->user_id,
+            'nomor_akun' => 'required|string|max:50|unique:rekenings,nomor_akun,NULL,id,user_id,' . Auth::id(),
         ], [
-            'user_id.exists' => 'User ID tidak ditemukan.',
-            'nomor_akun.unique' => 'Nomor akun ini sudah terdaftar untuk user yang dipilih.'
+            'nomor_akun.unique' => 'Nomor akun ini sudah terdaftar untuk Anda.'
         ]);
         
         Rekening::create([
-            'user_id' => $validatedData['user_id'],
+            'user_id' => Auth::id(), // Otomatis id admin yang sedang login
             'tipe_rekening' => $validatedData['tipe_rekening'],
             'nama_penyedia' => $validatedData['nama_penyedia'],
             'nama_pemilik' => $validatedData['nama_pemilik'],
