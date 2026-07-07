@@ -60,8 +60,15 @@ Buat kunci enkripsi keamanan aplikasi:
 php artisan key:generate
 ```
 
-### 5. Migrasi Database & Seeder
-Buat tabel-tabel di database secara otomatis beserta data awalnya (jika ada):
+### 5. Konfigurasi Database (Pilih Salah Satu)
+**Opsi A (Disarankan - Beserta Data Lengkap):**
+Kami sudah menyediakan file `jastgo_db.sql` yang berisi seluruh data lengkap (beserta produk, jastiper, dan riwayat pesanan). 
+1. Buka phpMyAdmin (misal: `http://localhost/phpmyadmin`).
+2. Pilih database `jastiplocal`.
+3. Klik menu **Import**, pilih file `jastgo_db.sql` yang ada di folder ini, lalu klik **Go/Kirim**.
+
+**Opsi B (Database Kosong / Mulai dari Nol):**
+Jika Anda ingin memulai dari tabel yang bersih, jalankan perintah ini di terminal:
 ```bash
 php artisan migrate --seed
 ```
